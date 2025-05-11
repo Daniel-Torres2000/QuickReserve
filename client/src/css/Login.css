@@ -1,0 +1,97 @@
+/* Fondo general */
+.login-container {
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 1rem;
+}
+
+/* Formulario */
+.login-form {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 3rem;
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+}
+
+/* Título */
+.login-title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  color: #d93025;
+  margin-bottom: 2rem;
+}
+
+/* Inputs */
+.login-input {
+  width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #d93025;
+  box-shadow: 0 0 5px rgba(217, 48, 37, 0.6);
+}
+
+/* Checkbox */
+.login-checkbox {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 1.5rem;
+}
+
+.login-checkbox input {
+  margin-right: 0.5rem;
+}
+
+/* Botón */
+.login-button {
+  background-color: #d93025;
+  color: white;
+  padding: 1rem;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #b3201a;
+}
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.login-footer a {
+  color: #d93025;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}

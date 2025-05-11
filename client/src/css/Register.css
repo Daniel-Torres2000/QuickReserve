@@ -7,6 +7,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 /* Estilo del formulario */
@@ -23,7 +24,7 @@
 /* Estilo del título */
 .register-title {
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   color: #d93025;
   margin-bottom: 2rem;
