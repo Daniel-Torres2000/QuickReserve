@@ -1,0 +1,80 @@
+.schedule {
+  padding: 2rem;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.schedule h2 {
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* Solo 5 columnas: lunes a viernes */
+  gap: 0.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.day,
+.time-slot {
+  padding: 0.5rem;
+  background-color: #ffe5e5;
+  border-radius: 5px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.day {
+  background-color: #d93025;
+  color: white;
+}
+
+/* Media queries para hacer la tabla responsive sin ocultar columnas */
+@media screen and (max-width: 768px) {
+  .schedule {
+    padding: 1rem;
+  }
+  
+  /* Contenedor para permitir scroll horizontal */
+  .schedule {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Para mejor desplazamiento en iOS */
+  }
+  
+  .time-grid {
+    min-width: 600px; /* Ancho mínimo para asegurar que se muestren todos los días */
+  }
+  
+  .day,
+  .time-slot {
+    padding: 0.4rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .schedule {
+    padding: 0.5rem;
+  }
+  
+  .time-grid {
+    min-width: 500px; /* Ancho mínimo ajustado para pantallas más pequeñas */
+    gap: 0.3rem;
+  }
+  
+  .day,
+  .time-slot {
+    padding: 0.3rem;
+    font-size: 0.85rem;
+    min-height: 35px;
+  }
+}

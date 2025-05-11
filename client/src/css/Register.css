@@ -1,0 +1,68 @@
+/* Register.css */
+
+/* Fondo de la pantalla */
+.bg-register {
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Estilo del formulario */
+.register-form {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 3rem;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Estilo del título */
+.register-title {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  color: #d93025;
+  margin-bottom: 2rem;
+}
+
+/* Estilo de los inputs */
+.register-input {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.register-input:focus {
+  outline: none;
+  border-color: #d93025;
+  box-shadow: 0 0 5px rgba(217, 48, 37, 0.6);
+}
+
+/* Estilo del botón */
+.register-button {
+  background-color: #d93025;
+  color: white;
+  padding: 1rem;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.register-button:hover {
+  background-color: #b3201a;
+}
+
+.register-button:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(179, 32, 26, 0.6);
+}

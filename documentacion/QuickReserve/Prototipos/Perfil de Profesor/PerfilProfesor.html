@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickReserve - Perfil de Profesor</title>
+    <style>
+        :root {
+            --primary: #dc2626;
+            --primary-dark: #b91c1c;
+            --primary-light: #fee2e2;
+            --secondary: #64748b;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            margin: 1.5rem 0;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        main {
+            padding: 1rem 0 3rem;
+        }
+        
+        .profile-header {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .profile-image {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: var(--primary);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-details {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .profile-details h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+        
+        .profile-details .subtitle {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .profile-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+        
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .profile-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card h2 .icon {
+            color: var(--primary);
+        }
+        
+        .tab-controls {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+        
+        .tab-btn {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--secondary);
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab-btn:hover:not(.active) {
+            color: var(--primary-dark);
+            background-color: var(--primary-light);
+        }
+        
+        .education-item, .experience-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .education-item:last-child, .experience-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .education-item h3, .experience-item h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.25rem;
+            color: var(--dark);
+        }
+        
+        .education-item .institution, .experience-item .company {
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .education-item .years, .experience-item .years {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .skill-item {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #f59e0b;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .review-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .review-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .reviewer {
+            font-weight: 600;
+        }
+        
+        .review-date {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+        
+        .schedule-section {
+            margin-top: 1.5rem;
+        }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 0.5rem;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 0.25rem;
+        }
+        
+        .time-slot {
+            text-align: center;
+            padding: 0.5rem;
+            background-color: var(--primary-light);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .time-slot:hover {
+            background-color: #fecaca;
+        }
+        
+        .time-slot.booked {
+            background-color: #fecaca;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        
+        .calendar-widget {
+            margin-top: 1rem;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .month-year {
+            font-weight: 600;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .nav-btn {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.25rem;
+        }
+        
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.75rem;
+            color: var(--secondary);
+            padding: 0.25rem;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .calendar-day:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .calendar-day.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .calendar-day.has-appointments {
+            position: relative;
+        }
+        
+        .calendar-day.has-appointments::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            width: 4px;
+            height: 4px;
+            background-color: var(--primary);
+            border-radius: 50%;
+        }
+        
+        .calendar-day.active.has-appointments::after {
+            background-color: white;
+        }
+        
+        .calendar-day.disabled {
+            color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        
+        .footer-column {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .footer-column h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-column ul li a {
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+        
+        .footer-column ul li a:hover {
+            color: white;
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #334155;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .profile-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .profile-image {
+                margin: 0 auto;
+            }
+            
+            .profile-stats {
+                width: 100%;
+                justify-content: space-around;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">QuickReserve</div>
+                <div class="nav-links">
+                    <a href="#">Inicio</a>
+                    <a href="#">Profesores</a>
+                    <a href="#">Mis Citas</a>
+                    <a href="#">Calendario</a>
+                    <a href="#">Soporte</a>
+                </div>
+                <div class="auth-buttons">
+                    <a href="#" class="btn btn-outline">Ingresar</a>
+                    <a href="#" class="btn btn-primary">Registrarse</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="container">
+        <div class="breadcrumb">
+            <a href="#">Inicio</a> / 
+            <a href="#">Profesores</a> / 
+            <span>Profa. Ana María Rodríguez</span>
+        </div>
+        
+        <section class="profile-header">
+            <div class="profile-image">
+                <div>AR</div>
+            </div>
+            <div class="profile-details">
+                <h1>Profa. Ana María Rodríguez</h1>
+                <div class="subtitle">Profesora de Matemáticas</div>
+                <p>Docente con más de 15 años de experiencia en educación primaria y secundaria. Especialista en hacer que las matemáticas sean accesibles y divertidas para todos los estudiantes.</p>
+                
+                <div class="profile-badges">
+                    <span class="badge">Matemáticas</span>
+                    <span class="badge">Secundaria</span>
+                    <span class="badge">Tutora</span>
+                    <span class="badge">Coordinadora de nivel</span>
+                </div>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">15+</div>
+                        <div class="stat-label">Años de experiencia</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4.9</div>
+                        <div class="stat-label">Calificación</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">245</div>
+                        <div class="stat-label">Citas completadas</div>
+                    </div>
+                </div>
+                
+                <div class="profile-actions">
+                    <a href="#schedule" class="btn btn-primary">Programar cita</a>
+                    <a href="#" class="btn btn-outline">Enviar mensaje</a>
+                </div>
+            </div>
+        </section>
+        
+        <div class="profile-content">
+            <div class="main-content">
+                <section class="card">
+                    <div class="tab-controls">
+                        <div class="tab-btn active">Experiencia</div>
+                        <div class="tab-btn">Educación</div>
+                        <div class="tab-btn">Habilidades</div>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="experience-list">
+                            <div class="experience-item">
+                                <h3>Profesora de Matemáticas</h3>
+                                <div class="company">Colegio San Ignacio</div>
+                                <div class="years">2018 - Presente</div>
+                                <p>Docente de matemáticas para niveles de secundaria. Coordinadora del departamento de matemáticas. Desarrollo e implementación del currículo adaptado a diferentes necesidades de aprendizaje.</p>
+                            </div>
+                            
+                            <div class="experience-item">
+                                <h3>Profesora de Matemáticas</h3>
+                                <div class="company">Colegio Santa María</div>
+                                <div class="years">2010 - 2018</div>
+                                <p>Responsable de la enseñanza de matemáticas para niveles primarios y secundarios. Implementación de metodologías innovadoras para mejorar el rendimiento académico.</p>
+                            </div>
+                            
+                            <div class="experience-item">
+                                <h3>Tutora de Matemáticas</h3>
+                                <div class="company">Centro de Aprendizaje Avanzado</div>
+                                <div class="years">2008 - 2010</div>
+                                <p>Tutoría personalizada para estudiantes con dificultades de aprendizaje en matemáticas. Desarrollo de planes individualizados para mejorar las habilidades matemáticas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="card">
+                    <h2><span class="icon">★</span> Valoraciones y opiniones</h2>
+                    
+                    <div class="review-list">
+                        <div class="review-item">
+                            <div class="review-header">
+                                <div class="reviewer">Carlos Mendoza (Padre de Alejandro)</div>
+                                <div class="review-date">15 de marzo, 2025</div>
+                            </div>
+                            <div class="rating">★★★★★</div>
+                            <p>La profesora Rodríguez ha sido una excelente guía para mi hijo. Gracias a su método de enseñanza, Alejandro ha mejorado considerablemente en matemáticas y ahora incluso disfruta resolviendo problemas. Las reuniones siempre son productivas y nos da consejos muy útiles para apoyar su aprendizaje desde casa.</p>
+                        </div>
+                        
+                        <div class="review-item">
+                            <div class="review-header">
+                                <div class="reviewer">Laura Torres (Madre de Paula)</div>
+                                <div class="review-date">28 de febrero, 2025</div>
+                            </div>
+                            <div class="rating">★★★★★</div>
+                            <p>Excelente profesora. Siempre dispuesta a aclarar dudas y proponer estrategias personalizadas para cada estudiante. Mi hija ha pasado de temer las matemáticas a sentirse confiada con la materia. Las reuniones son muy informativas y siempre nos da seguimiento de los avances.</p>
+                        </div>
+                        
+                        <div class="review-item">
+                            <div class="review-header">
+                                <div class="reviewer">Miguel Sánchez (Padre de Daniel)</div>
+                                <div class="review-date">10 de febrero, 2025</div>
+                            </div>
+                            <div class="rating">★★★★☆</div>
+                            <p>Muy buena profesora. Es clara en sus explicaciones y paciente con los estudiantes. Aprecio su disposición para programar reuniones en horarios flexibles y su habilidad para identificar áreas de mejora específicas. Daniel ha mostrado un gran progreso este año.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <aside>
+                <section id="schedule" class="card">
+                    <h2>Agenda una cita</h2>
+                    
+                    <div class="calendar-widget">
+                        <div class="calendar-header">
+                            <div class="month-year">Abril 2025</div>
+                            <div class="calendar-nav">
+                                <div class="nav-btn">←</div>
+                                <div class="nav-btn">→</div>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header">L</div>
+                            <div class="calendar-day-header">M</div>
+                            <div class="calendar-day-header">X</div>
+                            <div class="calendar-day-header">J</div>
+                            <div class="calendar-day-header">V</div>
+                            <div class="calendar-day-header">S</div>
+                            <div class="calendar-day-header">D</div>
+                            
+                            <div class="calendar-day disabled">31</div>
+                            <div class="calendar-day">1</div>
+                            <div class="calendar-day">2</div>
+                            <div class="calendar-day">3</div>
+                            <div class="calendar-day">4</div>
+                            <div class="calendar-day">5</div>
+                            <div class="calendar-day">6</div>
+                            
+                            <div class="calendar-day">7</div>
+                            <div class="calendar-day">8</div>
+                            <div class="calendar-day active">9</div>
+                            <div class="calendar-day has-appointments">10</div>
+                            <div class="calendar-day has-appointments">11</div>
+                            <div class="calendar-day has-appointments">12</div>
+                            <div class="calendar-day">13</div>
+                            
+                            <div class="calendar-day">14</div>
+                            <div class="calendar-day has-appointments">15</div>
+                            <div class="calendar-day">16</div>
+                            <div class="calendar-day">17</div>
+                            <div class="calendar-day has-appointments">18</div>
+                            <div class="calendar-day">19</div>
+                            <div class="calendar-day">20</div>
+                            
+                            <div class="calendar-day">21</div>
+                            <div class="calendar-day">22</div>
+                            <div class="calendar-day">23</div>
+                            <div class="calendar-day has-appointments">24</div>
+                            <div class="calendar-day">25</div>
+                            <div class="calendar-day">26</div>
+                            <div class="calendar-day">27</div>
+                            
+                            <div class="calendar-day">28</div>
+                            <div class="calendar-day">29</div>
+                            <div class="calendar-day">30</div>
+                            <div class="calendar-day disabled">1</div>
+                            <div class="calendar-day disabled">2</div>
+                            <div class="calendar-day disabled">3</div>
+                            <div class="calendar-day disabled">4</div>
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-section">
+                        <h3>Horarios disponibles para hoy (9 de abril)</h3>
+                        
+                        <div class="schedule-grid">
+                            <div class="day-header">Lunes</div>
+                            <div class="day-header">Martes</div>
+                            <div class="day-header">Miércoles</div>
+                            <div class="day-header">Jueves</div>
+                            <div class="day-header">Viernes</div>
+                            
+                            <div class="time-slot booked">8:00</div>
+                            <div class="time-slot">8:00</div>
+                            <div class="time-slot">8:00</div>
+                            <div class="time-slot">8:00</div>
+                            <div class="time-slot booked">8:00</div>
+                            
+                            <div class="time-slot">9:00</div>
+                            <div class="time-slot booked">9:00</div>
+                            <div class="time-slot">9:00</div>
+                            <div class="time-slot">9:00</div>
+                            <div class="time-slot">9:00</div>
+                            
+                            <div class="time-slot">10:00</div>
+                            <div class="time-slot">10:00</div>
+                            <div class="time-slot booked">10:00</div>
+                            <div class="time-slot">10:00</div>
+                            <div class="time-slot">10:00</div>
+                            
+                            <div class="time-slot">11:00</div>
+                            <div class="time-slot">11:00</div>
+                            <div class="time-slot">11:00</div>
+                            <div class="time-slot booked">11:00</div>
+                            <div class="time-slot">11:00</div>
+                            
+                            <div class="time-slot">12:00</div>
+                            <div class="time-slot">12:00</div>
+                            <div class="time-slot">12:00</div>
+                            <div class="time-slot">12:00</div>
+                            <div class="time-slot booked">12:00</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="card" style="margin-top: 2rem;">
+                    <h2>Información de contacto</h2>
+                    <p style="margin-bottom: 1rem;">Para consultas académicas, por favor programa una cita o usa la plataforma de mensajería.</p>
+                    <p><strong>Departamento:</strong> Matemáticas</p>
+                    <p><strong>Oficina:</strong> Edificio B, Aula 205</p>
+                    <p><strong>Horario de atención:</strong> Lunes a Viernes, 8:00 AM - 3:00 PM</p>
+                </section>
+            </aside>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>QuickReserve</h3>
+                    <p>Facilitando la comunicación efectiva entre padres y docentes para el éxito académico de los estudiantes.</p>
+                </div>
+                <div class="footer-column">
+                    <h3>Enlaces rápidos</h3>
+                    <ul>
+                        <li><a href="#">Inicio</a></li>
+                        <li><a href="#">Profesores</a></li>
+                        <li><a href="#">Mis Citas</a></li>
+                        <li><a href="#">Calendario</a></li>
+                        <li><a href="#">Soporte</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Soporte</h3>
+                    <ul>
+                        <li><a href="#">Centro de ayuda</a></li>
+                        <li><a href="#">Contacto</a></li>
+                        <li><a href="#">Preguntas frecuentes</a></li>
+                        <li><a href="#">Políticas de privacidad</a></li>
+                        <li><a href="#">Términos de servicio</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2025 EduConnect. Todos los derechos reservados.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

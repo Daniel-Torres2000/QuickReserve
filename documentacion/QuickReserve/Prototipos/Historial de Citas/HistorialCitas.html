@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickReserve - Historial de Reuniones</title>
+    <style>
+        :root {
+            --primary-color: #d32f2f;
+            --secondary-color: #b71c1c;
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --border-color: #ddd;
+            --hover-color: #ef5350;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 0.5rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+        
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .user-profile img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-outline {
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: #ffebee;
+        }
+        
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .filter-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .filter-input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .filter-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .search-input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 250px;
+            font-size: 0.9rem;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            text-align: left;
+        }
+        
+        th, td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: #ffebee;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+        
+        th:hover {
+            background-color: #ffcdd2;
+        }
+        
+        th i {
+            margin-left: 0.3rem;
+            font-size: 0.8rem;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .badge-success {
+            background-color: #d4f8e8;
+            color: #0d7a4d;
+        }
+        
+        .badge-warning {
+            background-color: #ffefd5;
+            color: #b35900;
+        }
+        
+        .badge-danger {
+            background-color: #ffebee;
+            color: #b71c1c;
+        }
+        
+        .badge-info {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+        
+        .pagination-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .page-btn:hover {
+            background-color: #ffebee;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .page-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .action-icon {
+            color: var(--primary-color);
+            cursor: pointer;
+            margin: 0 0.25rem;
+            font-size: 1.1rem;
+        }
+        
+        .action-icon:hover {
+            color: var(--hover-color);
+        }
+        
+        @media (max-width: 768px) {
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-calendar-check"></i>
+            QuickReserve
+        </div>
+        <div class="nav-links">
+            <a href="#"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#"><i class="fas fa-calendar-plus"></i> Nueva Reunión</a>
+            <a href="#" class="active"><i class="fas fa-history"></i> Historial</a>
+            <a href="#"><i class="fas fa-cog"></i> Configuración</a>
+        </div>
+        <div class="user-profile">
+            <img src="/api/placeholder/32/32" alt="Usuario">
+            <span>Juan Pérez</span>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Historial de Reuniones</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" id="exportExcel">
+                        <i class="fas fa-file-excel"></i> Exportar a Excel
+                    </button>
+                    <button class="btn btn-outline" id="clearFilters">
+                        <i class="fas fa-broom"></i> Limpiar filtros
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <span class="filter-label">Desde:</span>
+                    <input type="date" class="filter-input" id="dateFrom" value="2025-03-01">
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Hasta:</span>
+                    <input type="date" class="filter-input" id="dateTo" value="2025-04-09">
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Estado:</span>
+                    <select class="filter-input" id="statusFilter">
+                        <option value="">Todos</option>
+                        <option value="completada">Completada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="reprogramada">Reprogramada</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Sala:</span>
+                    <select class="filter-input" id="roomFilter">
+                        <option value="">Todas</option>
+                        <option value="Sala A">Sala A</option>
+                        <option value="Sala B">Sala B</option>
+                        <option value="Sala C">Sala C</option>
+                        <option value="Sala de Conferencias">Sala de Conferencias</option>
+                        <option value="Sala Virtual">Sala Virtual</option>
+                    </select>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Buscar por título, participantes...">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID <i class="fas fa-sort"></i></th>
+                            <th>Título <i class="fas fa-sort"></i></th>
+                            <th>Fecha <i class="fas fa-sort"></i></th>
+                            <th>Hora <i class="fas fa-sort"></i></th>
+                            <th>Duración <i class="fas fa-sort"></i></th>
+                            <th>Sala <i class="fas fa-sort"></i></th>
+                            <th>Organizador <i class="fas fa-sort"></i></th>
+                            <th>Participantes <i class="fas fa-sort"></i></th>
+                            <th>Estado <i class="fas fa-sort"></i></th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#0025</td>
+                            <td>Revisión de presupuesto Q2</td>
+                            <td>08/04/2025</td>
+                            <td>10:00</td>
+                            <td>60 min</td>
+                            <td>Sala A</td>
+                            <td>Carlos Mendoza</td>
+                            <td>8 personas</td>
+                            <td><span class="badge badge-success">Completada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-file-alt action-icon" title="Ver acta"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0024</td>
+                            <td>Planificación de marketing para mayo</td>
+                            <td>05/04/2025</td>
+                            <td>14:30</td>
+                            <td>90 min</td>
+                            <td>Sala de Conferencias</td>
+                            <td>Ana Jiménez</td>
+                            <td>12 personas</td>
+                            <td><span class="badge badge-success">Completada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-file-alt action-icon" title="Ver acta"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0023</td>
+                            <td>Entrevista candidato Desarrollador Frontend</td>
+                            <td>02/04/2025</td>
+                            <td>09:00</td>
+                            <td>45 min</td>
+                            <td>Sala B</td>
+                            <td>Laura Herrera</td>
+                            <td>3 personas</td>
+                            <td><span class="badge badge-warning">Reprogramada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-calendar-plus action-icon" title="Reprogramar"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0022</td>
+                            <td>Reunión con proveedores</td>
+                            <td>01/04/2025</td>
+                            <td>11:00</td>
+                            <td>120 min</td>
+                            <td>Sala de Conferencias</td>
+                            <td>Roberto Gómez</td>
+                            <td>7 personas</td>
+                            <td><span class="badge badge-danger">Cancelada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-calendar-plus action-icon" title="Reprogramar"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0021</td>
+                            <td>Demo de nuevo producto</td>
+                            <td>28/03/2025</td>
+                            <td>15:00</td>
+                            <td>60 min</td>
+                            <td>Sala Virtual</td>
+                            <td>Miguel Torres</td>
+                            <td>15 personas</td>
+                            <td><span class="badge badge-success">Completada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-file-alt action-icon" title="Ver acta"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0020</td>
+                            <td>Capacitación en nuevo CRM</td>
+                            <td>25/03/2025</td>
+                            <td>09:30</td>
+                            <td>180 min</td>
+                            <td>Sala C</td>
+                            <td>Patricia Lima</td>
+                            <td>20 personas</td>
+                            <td><span class="badge badge-success">Completada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-file-alt action-icon" title="Ver acta"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0019</td>
+                            <td>Seguimiento de proyectos en desarrollo</td>
+                            <td>22/03/2025</td>
+                            <td>14:00</td>
+                            <td>90 min</td>
+                            <td>Sala A</td>
+                            <td>Fernando Ruiz</td>
+                            <td>10 personas</td>
+                            <td><span class="badge badge-info">Pendiente</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-edit action-icon" title="Editar"></i>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#0018</td>
+                            <td>Revisión trimestral con departamento de ventas</td>
+                            <td>20/03/2025</td>
+                            <td>16:00</td>
+                            <td>120 min</td>
+                            <td>Sala de Conferencias</td>
+                            <td>Juan Pérez</td>
+                            <td>12 personas</td>
+                            <td><span class="badge badge-success">Completada</span></td>
+                            <td>
+                                <i class="fas fa-eye action-icon" title="Ver detalles"></i>
+                                <i class="fas fa-copy action-icon" title="Duplicar"></i>
+                                <i class="fas fa-file-alt action-icon" title="Ver acta"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <div class="pagination-info">
+                    Mostrando 1-8 de 45 reuniones
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" disabled>
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="page-btn" disabled>
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn">4</button>
+                    <button class="page-btn">5</button>
+                    <button class="page-btn">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                    <button class="page-btn">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funcionalidad del botón de exportar a Excel
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            alert('Exportando datos a Excel...');
+            // Aquí iría la lógica real de exportación
+        });
+        
+        // Funcionalidad del botón de limpiar filtros
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('dateFrom').value = '2025-03-01';
+            document.getElementById('dateTo').value = '2025-04-09';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('roomFilter').value = '';
+            document.querySelector('.search-input').value = '';
+            alert('Filtros limpiados');
+        });
+        
+        // Simulación de ordenamiento de tabla
+        document.querySelectorAll('th').forEach(header => {
+            header.addEventListener('click', function() {
+                alert('Ordenando por ' + this.textContent.trim().split(' ')[0]);
+            });
+        });
+        
+        // Simulación de paginación
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            if (!btn.classList.contains('active') && !btn.disabled) {
+                btn.addEventListener('click', function() {
+                    alert('Cambiando a la página seleccionada');
+                });
+            }
+        });
+        
+        // Simulación de acciones de fila
+        document.querySelectorAll('.action-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                alert('Acción: ' + this.getAttribute('title'));
+            });
+        });
+    </script>
+</body>
+</html>

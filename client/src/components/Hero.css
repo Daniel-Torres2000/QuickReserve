@@ -1,0 +1,80 @@
+.hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background-color: #f2f4f8;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.hero p {
+  margin: 1rem auto;
+  color: #666;
+  max-width: 800px;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.hero button {
+  margin-top: 1.5rem;
+  padding: 0.8rem 2rem;
+  background-color: #d93025;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.hero button:hover {
+  background-color: #b8271f;
+}
+
+/* Media queries para diseño responsivo */
+@media screen and (max-width: 992px) {
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+  
+  .hero p {
+    font-size: 1rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .hero {
+    padding: 2rem 1rem;
+  }
+  
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+  
+  .hero p {
+    font-size: 0.9rem;
+  }
+  
+  .hero button {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
