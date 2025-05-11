@@ -61,9 +61,11 @@ function Login() {
                 />
                 Remember me
               </label>
+              {/* 
               <a href="#" className="text-sm text-[#d93025] hover:underline">
                 Forgot your password?
-              </a>
+              </a> 
+              */}
             </div>
 
             <button
