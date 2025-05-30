@@ -7,7 +7,7 @@ function Register() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'asistente',
+    role: 'padre',
   });
 
   const handleChange = (e) => {
@@ -100,7 +100,6 @@ function Register() {
           onChange={handleChange}
           className="register-input"
         >
-          <option value="asistente">Asistente</option>
           <option value="docente">Docente</option>
           <option value="coordinador">Coordinador</option>
           <option value="padre">Padre de Familia</option>
