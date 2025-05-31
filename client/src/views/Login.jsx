@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // ✅ importar axios
+import axios from 'axios'; // importar axios
 import '../css/Login.css';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -20,34 +20,46 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    setError('');
+    setMessage('');
 
-  try {
-    // 1. Autenticarse con Firebase Auth (cliente)
-    const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-    const token = await userCredential.user.getIdToken();
+    try {
+      // 1. Autenticarse con Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const token = await userCredential.user.getIdToken();
 
-    // 2. Enviar token al backend para validar y obtener datos de usuario
-    const response = await axios.post(
-      'http://localhost:5000/api/auth/login',
-      {},  // body vacío
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // 2. Enviar token al backend para obtener los datos del usuario
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/login',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const userData = response.data;
+
+      // 3. Mostrar mensaje o redirigir según el rol
+      console.log('Usuario autenticado con éxito:', userData);
+      setMessage(`Bienvenido, ${userData.name} (${userData.role})`);
+
+      // (Opcional) Guardar token en localStorage si marcó "Recuérdame"
+      if (formData.remember) {
+        localStorage.setItem('token', token);
       }
-    );
 
-    console.log('Usuario autenticado con éxito:', response.data);
+      // (Opcional) Redirigir según el rol
+      // window.location.href = `/dashboard/${userData.role}`;
 
-    // Guardar datos o redirigir
-  } catch (error) {
-    console.error('Error al iniciar sesión:', error);
-    alert('Correo o contraseña incorrectos');
-  }
-};
-
-
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      console.log(error.response);
+      setError('Correo o contraseña incorrectos o usuario no registrado');
+    }
+  };
 
   return (
     <div className="login-container">
