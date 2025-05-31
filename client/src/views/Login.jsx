@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // importar axios
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../css/Login.css';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 
 function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -13,6 +15,7 @@ function Login() {
 
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -23,6 +26,7 @@ function Login() {
     e.preventDefault();
     setError('');
     setMessage('');
+    setLoading(true);
 
     try {
       // 1. Autenticarse con Firebase
@@ -42,22 +46,36 @@ function Login() {
 
       const userData = response.data;
 
-      // 3. Mostrar mensaje o redirigir según el rol
+      // 3. Guardar datos del usuario y token
+      if (formData.remember) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('userData', JSON.stringify(userData));
+      } else {
+        sessionStorage.setItem('token', token);
+        sessionStorage.setItem('userData', JSON.stringify(userData));
+      }
+
       console.log('Usuario autenticado con éxito:', userData);
       setMessage(`Bienvenido, ${userData.name} (${userData.role})`);
 
-      // (Opcional) Guardar token en localStorage si marcó "Recuérdame"
-      if (formData.remember) {
-        localStorage.setItem('token', token);
-      }
-
-      // (Opcional) Redirigir según el rol
-      // window.location.href = `/dashboard/${userData.role}`;
+      // 4. Redirigir según el rol después de un breve delay
+      setTimeout(() => {
+        if (userData.role === 'docente') {
+          navigate('/dashboard/docente');
+        } else if (userData.role === 'padre') {
+          navigate('/dashboard/padre');
+        } else if (userData.role === 'admin') {
+          navigate('/dashboard/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
-      console.log(error.response);
       setError('Correo o contraseña incorrectos o usuario no registrado');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,8 +84,8 @@ function Login() {
       <form onSubmit={handleSubmit} className="login-form">
         <h2 className="login-title">Iniciar Sesión</h2>
 
-        {message && <p style={{ color: 'green' }}>{message}</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {message && <p style={{ color: 'green', textAlign: 'center', marginBottom: '1rem' }}>{message}</p>}
+        {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '1rem' }}>{error}</p>}
 
         <input
           type="email"
@@ -77,6 +95,7 @@ function Login() {
           className="login-input"
           placeholder="Correo electrónico"
           required
+          disabled={loading}
         />
 
         <input
@@ -87,6 +106,7 @@ function Login() {
           className="login-input"
           placeholder="Contraseña"
           required
+          disabled={loading}
         />
 
         <label className="login-checkbox">
@@ -95,11 +115,18 @@ function Login() {
             name="remember"
             checked={formData.remember}
             onChange={handleChange}
+            disabled={loading}
           />
           Recuérdame
         </label>
 
-        <button type="submit" className="login-button">Ingresar</button>
+        <button 
+          type="submit" 
+          className="login-button"
+          disabled={loading}
+        >
+          {loading ? 'Iniciando sesión...' : 'Ingresar'}
+        </button>
 
         <p className="login-footer">
           ¿No tienes una cuenta? <a href="/register">Regístrate aquí</a>
