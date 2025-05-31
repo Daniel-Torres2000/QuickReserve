@@ -3,7 +3,7 @@ Content-Type: application/json
 
 {
   "name": "Daniel Torres",
-  "email": "ejemplo2@gmail.com",
-  "password": "12345678",
-  "role": "coordinador"
+  "email": "josedanieltorresgarcia26@gmail.com",
+  "password": "umg2025",
+  "role": "administrador"
 }

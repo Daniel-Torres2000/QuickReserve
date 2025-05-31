@@ -27,4 +27,44 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser };
+//loginUser
+const loginUser = async (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
+  const idToken = authHeader.split(' ')[1];
+
+  try {
+    // Verificar el token enviado desde el frontend
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    // Obtener datos del usuario desde Firestore
+    const userDoc = await db.collection('usuarios').doc(uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Usuario no encontrado en Firestore' });
+    }
+
+    const userData = userDoc.data();
+
+    res.status(200).json({
+      uid,
+      email: decodedToken.email,
+      role: userData.role,
+      name: userData.name,
+    });
+
+  } catch (error) {
+    console.error('Error al verificar token:', error);
+    return res.status(401).json({ error: 'Token inválido o expirado' });
+  }
+};
+
+module.exports = { 
+  registerUser,
+  loginUser,
+};

@@ -1,0 +1,120 @@
+import React, { useState } from 'react';
+import '../css/Register.css';
+
+function Register() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'padre',
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      alert('Las contraseñas no coinciden');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Usuario registrado exitosamente');
+        console.log(data);
+      } else {
+        alert(`Error: ${data.message || 'No se pudo registrar'}`);
+      }
+    } catch (error) {
+      console.error('Error al enviar el formulario:', error);
+      alert('Hubo un error en el servidor.');
+    }
+  };
+
+  return (
+    <div className="bg-register">
+      <form
+        onSubmit={handleSubmit}
+        className="register-form"
+      >
+        <h2 className="register-title">
+          Formulario de Registro
+        </h2>
+
+        <input
+          type="text"
+          name="name"
+          placeholder="Nombre completo"
+          value={formData.name}
+          onChange={handleChange}
+          className="register-input"
+          required
+        />
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Correo electrónico"
+          value={formData.email}
+          onChange={handleChange}
+          className="register-input"
+          required
+        />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Contraseña"
+          value={formData.password}
+          onChange={handleChange}
+          className="register-input"
+          required
+        />
+
+        <input
+          type="password"
+          name="confirmPassword"
+          placeholder="Confirmar contraseña"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          className="register-input"
+          required
+        />
+
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          className="register-input"
+        >
+          <option value="docente">Docente</option>
+          <option value="coordinador">Coordinador</option>
+          <option value="padre">Padre de Familia</option>
+          <option value="administrador">Administrador</option>
+        </select>
+
+        <button
+          type="submit"
+          className="register-button"
+        >
+          Registrarse
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default Register;
