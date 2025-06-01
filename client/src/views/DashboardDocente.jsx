@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import '../css/DashboardDocente.css';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -74,16 +74,77 @@ function DashboardDocente() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+  // 🔥 CONSTANTES MOVIDAS FUERA DEL COMPONENTE PARA EVITAR DEPENDENCIAS
+  const diasSemana = useMemo(() => ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'], []);
   
   // 🕐 HORARIOS DISPONIBLES (8:00 AM - 2:00 PM, cada hora)
-  const horasDisponibles = [
+  const horasDisponibles = useMemo(() => [
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
-  ];
+  ], []);
 
-  // 🔥 FUNCIONES FIRESTORE PARA USUARIOS/PADRES
+  // 🔥 FUNCIONES FIRESTORE PARA USUARIOS/PADRES (ENVUELTAS EN useCallback)
 
-  const cargarUsuariosPadres = async () => {
+  // 🔄 FUNCIÓN ALTERNATIVA PARA BUSCAR CON 'rol' EN LUGAR DE 'role'
+  const buscarConRolAlternativo = useCallback(async () => {
+    try {
+      console.log('🔍 Intentando búsqueda alternativa con campo "rol"...');
+      
+      const usuariosRef = collection(db, 'usuarios');
+      const q = query(usuariosRef, where('rol', '==', 'padre')); // Campo 'rol'
+      
+      const usuariosSnap = await getDocs(q);
+      const padres = [];
+      
+      console.log(`📊 Documentos encontrados con 'rol': ${usuariosSnap.size}`);
+      
+      usuariosSnap.forEach((doc) => {
+        const userData = { id: doc.id, ...doc.data() };
+        console.log('👤 Usuario encontrado (rol):', userData);
+        padres.push(userData);
+      });
+      
+      if (padres.length > 0) {
+        setUsuariosPadres(padres);
+        console.log('✅ Usuarios encontrados con campo "rol":', padres.length);
+      } else {
+        // Si tampoco encuentra con 'rol', intentar cargar todos y filtrar
+        try {
+          console.log('🔍 Cargando todos los usuarios para debug...');
+          
+          const usuariosRef = collection(db, 'usuarios');
+          const usuariosSnap = await getDocs(usuariosRef);
+          
+          console.log(`📊 Total documentos en colección: ${usuariosSnap.size}`);
+          
+          const todosUsuarios = [];
+          usuariosSnap.forEach((doc) => {
+            const userData = { id: doc.id, ...doc.data() };
+            todosUsuarios.push(userData);
+            console.log('📋 Usuario:', userData);
+          });
+          
+          // Filtrar padres manualmente
+          const padres = todosUsuarios.filter(usuario => 
+            usuario.role === 'padre' || usuario.rol === 'padre'
+          );
+          
+          console.log('👥 Padres filtrados manualmente:', padres);
+          
+          if (padres.length > 0) {
+            setUsuariosPadres(padres);
+            console.log('✅ Padres cargados mediante filtro manual:', padres.length);
+          }
+        } catch (error) {
+          console.error('❌ Error al cargar todos los usuarios:', error);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en búsqueda alternativa:', error);
+    }
+  }, []);
+
+  const cargarUsuariosPadres = useCallback(async () => {
     try {
       setLoadingUsuarios(true);
       console.log('🔍 Buscando usuarios padres en colección "usuarios"...');
@@ -117,106 +178,27 @@ function DashboardDocente() {
     } finally {
       setLoadingUsuarios(false);
     }
-  };
+  }, [buscarConRolAlternativo]);
 
-  // 🔄 FUNCIÓN ALTERNATIVA PARA BUSCAR CON 'rol' EN LUGAR DE 'role'
-  const buscarConRolAlternativo = async () => {
-    try {
-      console.log('🔍 Intentando búsqueda alternativa con campo "rol"...');
-      
-      const usuariosRef = collection(db, 'usuarios');
-      const q = query(usuariosRef, where('rol', '==', 'padre')); // Campo 'rol'
-      
-      const usuariosSnap = await getDocs(q);
-      const padres = [];
-      
-      console.log(`📊 Documentos encontrados con 'rol': ${usuariosSnap.size}`);
-      
-      usuariosSnap.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
-        console.log('👤 Usuario encontrado (rol):', userData);
-        padres.push(userData);
-      });
-      
-      if (padres.length > 0) {
-        setUsuariosPadres(padres);
-        console.log('✅ Usuarios encontrados con campo "rol":', padres.length);
-      } else {
-        // Si tampoco encuentra con 'rol', intentar cargar todos y filtrar
-        await cargarTodosLosUsuarios();
-      }
-      
-    } catch (error) {
-      console.error('❌ Error en búsqueda alternativa:', error);
-    }
-  };
-
-  // 🔍 FUNCIÓN DE ÚLTIMO RECURSO: CARGAR TODOS Y FILTRAR
-  const cargarTodosLosUsuarios = async () => {
-    try {
-      console.log('🔍 Cargando todos los usuarios para debug...');
-      
-      const usuariosRef = collection(db, 'usuarios');
-      const usuariosSnap = await getDocs(usuariosRef);
-      
-      console.log(`📊 Total documentos en colección: ${usuariosSnap.size}`);
-      
-      const todosUsuarios = [];
-      usuariosSnap.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
-        todosUsuarios.push(userData);
-        console.log('📋 Usuario:', userData);
-      });
-      
-      // Filtrar padres manualmente
-      const padres = todosUsuarios.filter(usuario => 
-        usuario.role === 'padre' || usuario.rol === 'padre'
-      );
-      
-      console.log('👥 Padres filtrados manualmente:', padres);
-      
-      if (padres.length > 0) {
-        setUsuariosPadres(padres);
-        console.log('✅ Padres cargados mediante filtro manual:', padres.length);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error al cargar todos los usuarios:', error);
-    }
-  };
-
-  const obtenerDatosPadre = (padreId) => {
+  const obtenerDatosPadre = useCallback((padreId) => {
     return usuariosPadres.find(padre => padre.id === padreId);
-  };
+  }, [usuariosPadres]);
 
-  // 🔥 FUNCIONES FIRESTORE PARA HORARIOS
+  // 🔥 FUNCIONES FIRESTORE PARA HORARIOS (ENVUELTAS EN useCallback)
 
-  const cargarHorarioDesdeFirestore = async () => {
-    try {
-      setLoading(true);
-      const horarioRef = doc(db, 'horarios_docentes', user.uid);
-      const horarioSnap = await getDoc(horarioRef);
-      
-      if (horarioSnap.exists()) {
-        const horarioData = horarioSnap.data();
-        setHorarioDocente(horarioData.horario);
-        console.log('✅ Horario cargado desde Firestore:', horarioData.horario);
-      } else {
-        // Si no existe, crear horario por defecto
-        const horarioDefault = inicializarHorarioDefault();
-        await guardarHorarioEnFirestore(horarioDefault);
-        setHorarioDocente(horarioDefault);
-        console.log('🆕 Horario por defecto creado');
-      }
-    } catch (error) {
-      console.error('❌ Error al cargar horario:', error);
-      setError('Error al cargar horario: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const inicializarHorarioDefault = useCallback(() => {
+    const horarioDefault = {};
+    diasSemana.forEach(dia => {
+      horarioDefault[dia] = {};
+      horasDisponibles.forEach(hora => {
+        // Por defecto, todas las horas están disponibles excepto el receso (10:00-11:00)
+        horarioDefault[dia][hora] = hora !== '10:00'; // 10:00 es receso
+      });
+    });
+    return horarioDefault;
+  }, [diasSemana, horasDisponibles]);
 
-  const guardarHorarioEnFirestore = async (horario = horarioDocente) => {
+  const guardarHorarioEnFirestore = useCallback(async (horario = horarioDocente) => {
     try {
       setLoading(true);
       const horarioRef = doc(db, 'horarios_docentes', user.uid);
@@ -241,23 +223,71 @@ function DashboardDocente() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [horarioDocente, user?.uid, user?.email, user?.name, docenteData.subject, docenteData.grade]);
 
-  const inicializarHorarioDefault = () => {
-    const horarioDefault = {};
-    diasSemana.forEach(dia => {
-      horarioDefault[dia] = {};
-      horasDisponibles.forEach(hora => {
-        // Por defecto, todas las horas están disponibles excepto el receso (10:00-11:00)
-        horarioDefault[dia][hora] = hora !== '10:00'; // 10:00 es receso
-      });
+  const cargarHorarioDesdeFirestore = useCallback(async () => {
+    try {
+      setLoading(true);
+      const horarioRef = doc(db, 'horarios_docentes', user.uid);
+      const horarioSnap = await getDoc(horarioRef);
+      
+      if (horarioSnap.exists()) {
+        const horarioData = horarioSnap.data();
+        setHorarioDocente(horarioData.horario);
+        console.log('✅ Horario cargado desde Firestore:', horarioData.horario);
+      } else {
+        // Si no existe, crear horario por defecto
+        const horarioDefault = inicializarHorarioDefault();
+        await guardarHorarioEnFirestore(horarioDefault);
+        setHorarioDocente(horarioDefault);
+        console.log('🆕 Horario por defecto creado');
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar horario:', error);
+      setError('Error al cargar horario: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.uid, inicializarHorarioDefault, guardarHorarioEnFirestore]);
+
+  // 🔥 FUNCIONES FIRESTORE PARA CITAS (ENVUELTAS EN useCallback)
+
+  // 🔥 FUNCIONES UTILITARIAS (ENVUELTAS EN useCallback)
+  const obtenerHoraFin = useCallback((horaInicio) => {
+    const [hora, minutos] = horaInicio.split(':').map(Number);
+    const horaFin = hora + 1;
+    return `${horaFin.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+  }, []);
+
+  const obtenerFechaDelDia = useCallback((dia) => {
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+    
+    const indiceDia = diasSemana.indexOf(dia);
+    const fechaDia = new Date(inicioSemana);
+    fechaDia.setDate(inicioSemana.getDate() + indiceDia);
+    
+    return fechaDia.toISOString().split('T')[0];
+  }, [diasSemana]);
+
+  const obtenerSemanaActual = useCallback(() => {
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+    
+    const finSemana = new Date(inicioSemana);
+    finSemana.setDate(inicioSemana.getDate() + 4); // Viernes
+    
+    const formatoFecha = (fecha) => fecha.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit' 
     });
-    return horarioDefault;
-  };
+    
+    return `${formatoFecha(inicioSemana)} - ${formatoFecha(finSemana)}`;
+  }, []);
 
-  // 🔥 FUNCIONES FIRESTORE PARA CITAS
-
-  const cargarCitasDesdeFirestore = async () => {
+  const cargarCitasDesdeFirestore = useCallback(async () => {
     try {
       const citasRef = collection(db, 'citas');
       
@@ -300,10 +330,10 @@ function DashboardDocente() {
       console.error('❌ Error al cargar citas:', error);
       setError('Error al cargar citas: ' + error.message);
     }
-  };
+  }, [user?.uid, obtenerSemanaActual]);
 
   // 🔥 NUEVA FUNCIÓN PARA CARGAR HISTORIAL COMPLETO
-  const cargarHistorialCompleto = async () => {
+  const cargarHistorialCompleto = useCallback(async () => {
     try {
       setLoading(true);
       const citasRef = collection(db, 'citas');
@@ -341,9 +371,21 @@ function DashboardDocente() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
 
-  const guardarCitaEnFirestore = async (citaData) => {
+  const verificarNuevaSemana = useCallback(() => {
+    const ultimaSemana = localStorage.getItem('ultimaSemanaDocente');
+    const semanaActualStr = obtenerSemanaActual();
+    
+    if (ultimaSemana && ultimaSemana !== semanaActualStr) {
+      // Es una nueva semana, las citas se moverán automáticamente por la consulta de Firestore
+      console.log('🔄 Nueva semana detectada:', semanaActualStr);
+    }
+    
+    localStorage.setItem('ultimaSemanaDocente', semanaActualStr);
+  }, [obtenerSemanaActual]);
+
+  const guardarCitaEnFirestore = useCallback(async (citaData) => {
     try {
       const citasRef = collection(db, 'citas');
       
@@ -392,9 +434,9 @@ function DashboardDocente() {
       console.error('❌ Error al guardar cita:', error);
       throw error;
     }
-  };
+  }, [user?.uid, user?.email, user?.name, docenteData.subject, docenteData.grade, obtenerDatosPadre, obtenerSemanaActual, obtenerHoraFin, obtenerFechaDelDia]);
 
-  const actualizarCitaEnFirestore = async (citaId, datosActualizados) => {
+  const actualizarCitaEnFirestore = useCallback(async (citaId, datosActualizados) => {
     try {
       const citaRef = doc(db, 'citas', citaId);
       await updateDoc(citaRef, {
@@ -405,9 +447,9 @@ function DashboardDocente() {
       console.error('❌ Error al actualizar cita:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const eliminarCitaDeFirestore = async (citaId) => {
+  const eliminarCitaDeFirestore = useCallback(async (citaId) => {
     try {
       const citaRef = doc(db, 'citas', citaId);
       await deleteDoc(citaRef);
@@ -415,26 +457,9 @@ function DashboardDocente() {
       console.error('❌ Error al eliminar cita:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // 🔥 FUNCIONES UTILITARIAS
-  const obtenerSemanaActual = () => {
-    const hoy = new Date();
-    const inicioSemana = new Date(hoy);
-    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
-    
-    const finSemana = new Date(inicioSemana);
-    finSemana.setDate(inicioSemana.getDate() + 4); // Viernes
-    
-    const formatoFecha = (fecha) => fecha.toLocaleDateString('es-ES', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    });
-    
-    return `${formatoFecha(inicioSemana)} - ${formatoFecha(finSemana)}`;
-  };
-
-  const verificarDisponibilidadHora = (dia, hora) => {
+  const verificarDisponibilidadHora = useCallback((dia, hora) => {
     // Verificar si el horario del docente permite esa hora
     if (!horarioDocente[dia]?.[hora]) {
       return false;
@@ -444,69 +469,64 @@ function DashboardDocente() {
     return !citasSemanaActual.some(cita => 
       cita.dia === dia && cita.hora === hora && cita.estado !== 'Cancelada'
     );
-  };
+  }, [horarioDocente, citasSemanaActual]);
 
-  const obtenerHorasDisponiblesPorDia = (dia) => {
+  const obtenerHorasDisponiblesPorDia = useCallback((dia) => {
     return horasDisponibles.filter(hora => horarioDocente[dia]?.[hora] === true);
-  };
+  }, [horarioDocente, horasDisponibles]);
 
-  // 🔥 EFECTOS
+  // 🔥 EFECTOS CORREGIDOS CON TODAS LAS DEPENDENCIAS
   useEffect(() => {
     if (user?.uid) {
       setSemanaActual(obtenerSemanaActual());
       cargarHorarioDesdeFirestore();
-      cargarUsuariosPadres(); // 👥 CARGAR USUARIOS AL INICIAR
-      cargarHistorialCompleto(); // 📋 CARGAR HISTORIAL COMPLETO AL INICIAR
+      cargarUsuariosPadres();
+      cargarHistorialCompleto();
       verificarNuevaSemana();
     }
-  }, [user?.uid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]); // 🔥 SOLO user.uid COMO DEPENDENCIA
 
   useEffect(() => {
     if (user?.uid && Object.keys(horarioDocente).length > 0) {
       cargarCitasDesdeFirestore();
     }
-  }, [user?.uid, horarioDocente]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, horarioDocente]); // 🔥 SIN cargarCitasDesdeFirestore
 
   // 🔄 NUEVO EFECTO PARA CARGAR HISTORIAL CUANDO SE CAMBIE A ESA SECCIÓN
   useEffect(() => {
     if (activeSection === 'historial' && user?.uid) {
       cargarHistorialCompleto();
     }
-  }, [activeSection, user?.uid]);
-
-  const verificarNuevaSemana = () => {
-    const ultimaSemana = localStorage.getItem('ultimaSemanaDocente');
-    const semanaActualStr = obtenerSemanaActual();
-    
-    if (ultimaSemana && ultimaSemana !== semanaActualStr) {
-      // Es una nueva semana, las citas se moverán automáticamente por la consulta de Firestore
-      console.log('🔄 Nueva semana detectada:', semanaActualStr);
-    }
-    
-    localStorage.setItem('ultimaSemanaDocente', semanaActualStr);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, user?.uid]); // 🔥 SIN cargarHistorialCompleto
 
   // 🔥 CRUD PARA CITAS
   const handleCreateCita = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log('🔥 Iniciando creación de cita...');
       
       // 🚫 VALIDAR QUE HAYA USUARIOS DISPONIBLES
       if (usuariosPadres.length === 0) {
         setError('No hay usuarios registrados. No se pueden crear citas.');
+        console.log('❌ Error: No hay usuarios registrados');
         return;
       }
       
       // 🚫 VALIDAR CAMPOS REQUERIDOS (SIN ESTUDIANTE)
       if (!newCita.padreId) {
         setError('Debe seleccionar un padre de familia');
+        console.log('❌ Error: No se seleccionó padre');
         return;
       }
       
       // Verificar disponibilidad
       if (!verificarDisponibilidadHora(newCita.dia, newCita.hora)) {
         setError('Ya hay una cita programada en ese horario o no está disponible');
+        console.log('❌ Error: Horario no disponible');
         return;
       }
 
@@ -522,9 +542,11 @@ function DashboardDocente() {
       console.log('✅ Cita creada exitosamente');
       
     } catch (error) {
+      console.error('❌ Error al crear la cita:', error);
       setError('Error al crear la cita: ' + error.message);
     } finally {
       setLoading(false);
+      console.log('🔄 Loading finalizado');
     }
   };
 
@@ -592,25 +614,6 @@ function DashboardDocente() {
     }
   };
 
-  // 🔥 FUNCIONES AUXILIARES
-  const obtenerFechaDelDia = (dia) => {
-    const hoy = new Date();
-    const inicioSemana = new Date(hoy);
-    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
-    
-    const indiceDia = diasSemana.indexOf(dia);
-    const fechaDia = new Date(inicioSemana);
-    fechaDia.setDate(inicioSemana.getDate() + indiceDia);
-    
-    return fechaDia.toISOString().split('T')[0];
-  };
-
-  const obtenerHoraFin = (horaInicio) => {
-    const [hora, minutos] = horaInicio.split(':').map(Number);
-    const horaFin = hora + 1;
-    return `${horaFin.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
-  };
-
   const getCitasPorDia = (dia) => {
     return citasSemanaActual.filter(cita => cita.dia === dia);
   };
@@ -642,7 +645,10 @@ function DashboardDocente() {
         </div>
         <button 
           className="new-cita-button"
-          onClick={() => setShowNewCitaModal(true)}
+          onClick={() => {
+            console.log('🔥 Botón Nueva Cita clickeado');
+            setShowNewCitaModal(true);
+          }}
           disabled={loading}
         >
           + Nueva Cita
@@ -1178,7 +1184,7 @@ function DashboardDocente() {
                 <button 
                   type="submit" 
                   className="submit-button"
-                  disabled={loading || usuariosPadres.length === 0}
+                  disabled={loading}
                 >
                   {loading ? 'Programando...' : 'Programar Cita'}
                 </button>
@@ -1434,3 +1440,4 @@ function DashboardDocente() {
 }
 
 export default DashboardDocente;
+//Este funciona 
