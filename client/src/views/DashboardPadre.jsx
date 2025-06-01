@@ -14,6 +14,7 @@ import {
 import { 
   collection, 
   doc, 
+  getDoc,  // ✅ IMPORTAR getDoc
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -39,6 +40,12 @@ function DashboardPadre() {
   const [historialCitas, setHistorialCitas] = useState([]);
   const [docentesDisponibles, setDocentesDisponibles] = useState([]);
   
+  // 🔥 NUEVOS ESTADOS PARA HORARIOS DEL DOCENTE SELECCIONADO
+  const [horarioDocenteSeleccionado, setHorarioDocenteSeleccionado] = useState({});
+  const [citasDocenteSeleccionado, setCitasDocenteSeleccionado] = useState([]);
+  const [loadingHorario, setLoadingHorario] = useState(false);
+  const [semanaActual, setSemanaActual] = useState('');
+  
   // Estados para modales y loading
   const [showNewCitaModal, setShowNewCitaModal] = useState(false);
   const [showEditCitaModal, setShowEditCitaModal] = useState(false);
@@ -50,10 +57,16 @@ function DashboardPadre() {
   // 🔄 NUEVO CITA SIN CAMPO HIJO
   const [newCita, setNewCita] = useState({
     docenteId: '',
-    fecha: '',
+    dia: '',
     hora: '',
     motivo: ''
   });
+
+  // 🔥 CONSTANTES PARA HORARIOS
+  const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+  const horasDisponibles = [
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
+  ];
 
   // 🔥 FUNCIONES FIRESTORE PARA DOCENTES
 
@@ -159,6 +172,118 @@ function DashboardPadre() {
     }
   };
 
+  // 🔥 FUNCIONES FIRESTORE PARA HORARIOS DEL DOCENTE
+
+  const cargarHorarioDocente = async (docenteId) => {
+    try {
+      setLoadingHorario(true);
+      console.log('🔍 Cargando horario del docente:', docenteId);
+      
+      // 📅 CARGAR HORARIO DEL DOCENTE
+      const horarioRef = doc(db, 'horarios_docentes', docenteId);
+      const horarioSnap = await getDoc(horarioRef);
+      
+      if (horarioSnap.exists()) {
+        const horarioData = horarioSnap.data();
+        setHorarioDocenteSeleccionado(horarioData.horario || {});
+        console.log('✅ Horario del docente cargado:', horarioData.horario);
+      } else {
+        console.log('⚠️ No se encontró horario para el docente');
+        setHorarioDocenteSeleccionado({});
+      }
+      
+      // 📅 CARGAR CITAS EXISTENTES DEL DOCENTE EN LA SEMANA ACTUAL
+      await cargarCitasDocenteSemanaActual(docenteId);
+      
+    } catch (error) {
+      console.error('❌ Error al cargar horario del docente:', error);
+      setHorarioDocenteSeleccionado({});
+    } finally {
+      setLoadingHorario(false);
+    }
+  };
+
+  const cargarCitasDocenteSemanaActual = async (docenteId) => {
+    try {
+      const citasRef = collection(db, 'citas');
+      
+      const q = query(
+        citasRef,
+        where('docenteId', '==', docenteId),
+        where('semana', '==', obtenerSemanaActual())
+      );
+      
+      const citasSnap = await getDocs(q);
+      const citasDocente = [];
+      
+      citasSnap.forEach((doc) => {
+        citasDocente.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      setCitasDocenteSeleccionado(citasDocente);
+      console.log('✅ Citas del docente en semana actual:', citasDocente.length);
+      
+    } catch (error) {
+      console.error('❌ Error al cargar citas del docente:', error);
+      setCitasDocenteSeleccionado([]);
+    }
+  };
+
+  // 🔥 FUNCIONES UTILITARIAS PARA HORARIOS
+  const obtenerSemanaActual = () => {
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+    
+    const finSemana = new Date(inicioSemana);
+    finSemana.setDate(inicioSemana.getDate() + 4); // Viernes
+    
+    const formatoFecha = (fecha) => fecha.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit' 
+    });
+    
+    return `${formatoFecha(inicioSemana)} - ${formatoFecha(finSemana)}`;
+  };
+
+  const obtenerFechaDelDia = (dia) => {
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+    
+    const indiceDia = diasSemana.indexOf(dia);
+    const fechaDia = new Date(inicioSemana);
+    fechaDia.setDate(inicioSemana.getDate() + indiceDia);
+    
+    return fechaDia.toISOString().split('T')[0];
+  };
+
+  const obtenerHoraFin = (horaInicio) => {
+    const [hora, minutos] = horaInicio.split(':').map(Number);
+    const horaFin = hora + 1;
+    return `${horaFin.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+  };
+
+  const verificarDisponibilidadHora = (dia, hora) => {
+    // Verificar si el horario del docente permite esa hora
+    if (!horarioDocenteSeleccionado[dia]?.[hora]) {
+      return false;
+    }
+    
+    // Verificar si ya hay una cita en ese horario
+    return !citasDocenteSeleccionado.some(cita => 
+      cita.dia === dia && cita.hora === hora && cita.estado !== 'Cancelada'
+    );
+  };
+
+  const obtenerHorasDisponiblesPorDia = (dia) => {
+    if (!horarioDocenteSeleccionado[dia]) return [];
+    return horasDisponibles.filter(hora => horarioDocenteSeleccionado[dia][hora] === true);
+  };
+
   const obtenerDatosDocente = (docenteId) => {
     return docentesDisponibles.find(docente => docente.id === docenteId);
   };
@@ -247,17 +372,18 @@ function DashboardPadre() {
         padreEmail: padreData.email,
         padreTelefono: padreData.phone,
         
-        // Datos de la cita
-        fecha: citaData.fecha,
+        // 🔥 DATOS DE LA CITA CON ESTRUCTURA IGUAL AL DOCENTE
+        dia: citaData.dia,
         hora: citaData.hora,
+        horaFin: obtenerHoraFin(citaData.hora),
         motivo: citaData.motivo,
-        estado: 'Pendiente', // Estado inicial desde el padre
+        estado: 'Confirmada', // ✅ CONFIRMADA DIRECTAMENTE (NO PENDIENTE)
         
         // Datos temporales y de seguimiento
-        semana: obtenerSemanaFromFecha(citaData.fecha),
-        día: obtenerDiaFromFecha(citaData.fecha),
-        año: new Date(citaData.fecha).getFullYear(),
-        mes: new Date(citaData.fecha).getMonth() + 1,
+        fecha: obtenerFechaDelDia(citaData.dia),
+        semana: obtenerSemanaActual(),
+        año: new Date().getFullYear(),
+        mes: new Date().getMonth() + 1,
         
         // Metadatos
         fechaCreacion: new Date().toISOString(),
@@ -324,6 +450,7 @@ function DashboardPadre() {
   // 🔥 EFECTOS
   useEffect(() => {
     if (user?.uid) {
+      setSemanaActual(obtenerSemanaActual());
       cargarDocentesDisponibles();
       cargarCitasDelPadre();
     }
@@ -354,13 +481,14 @@ function DashboardPadre() {
         return;
       }
       
-      // 🚫 VALIDAR FECHA NO ESTÉ EN EL PASADO
-      const fechaSeleccionada = new Date(newCita.fecha);
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
+      if (!newCita.dia || !newCita.hora) {
+        setError('Debe seleccionar día y hora');
+        return;
+      }
       
-      if (fechaSeleccionada < hoy) {
-        setError('No se pueden programar citas en fechas pasadas');
+      // 🚫 VERIFICAR DISPONIBILIDAD
+      if (!verificarDisponibilidadHora(newCita.dia, newCita.hora)) {
+        setError('Ya hay una cita programada en ese horario o no está disponible');
         return;
       }
 
@@ -369,8 +497,10 @@ function DashboardPadre() {
       
       // Actualizar estado local
       setCitasProgramadas(prev => [...prev, citaCompleta]);
-      setNewCita({ docenteId: '', fecha: '', hora: '', motivo: '' });
+      setNewCita({ docenteId: '', dia: '', hora: '', motivo: '' });
       setShowNewCitaModal(false);
+      setHorarioDocenteSeleccionado({}); // Limpiar horario
+      setCitasDocenteSeleccionado([]); // Limpiar citas
       setError('');
       
       console.log('✅ Cita creada exitosamente por el padre');
@@ -448,7 +578,25 @@ function DashboardPadre() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewCita({ ...newCita, [name]: value });
+    
+    // 🔄 SI CAMBIA EL DOCENTE, CARGAR SU HORARIO
+    if (name === 'docenteId') {
+      setNewCita({ 
+        ...newCita, 
+        [name]: value,
+        dia: '', // Resetear día y hora cuando cambie el docente
+        hora: ''
+      });
+      
+      if (value) {
+        cargarHorarioDocente(value);
+      } else {
+        setHorarioDocenteSeleccionado({});
+        setCitasDocenteSeleccionado([]);
+      }
+    } else {
+      setNewCita({ ...newCita, [name]: value });
+    }
   };
 
   const formatearFecha = (fecha) => {
@@ -796,41 +944,96 @@ function DashboardPadre() {
                 </small>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Fecha</label>
-                  <input
-                    type="date"
-                    name="fecha"
-                    value={newCita.fecha}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    min={new Date().toISOString().split('T')[0]} // No permitir fechas pasadas
-                    required
-                  />
+              {/* 🔥 HORARIO DEL DOCENTE SELECCIONADO */}
+              {newCita.docenteId && (
+                <div className="horario-docente-section">
+                  <h4 className="horario-title">
+                    📅 Horario Disponible - Semana Actual ({semanaActual})
+                    {loadingHorario && <span className="loading-text"> (Cargando...)</span>}
+                  </h4>
+                  
+                  {loadingHorario ? (
+                    <div className="loading-horario">
+                      <div className="loading-spinner"></div>
+                      <p>Cargando horario del docente...</p>
+                    </div>
+                  ) : Object.keys(horarioDocenteSeleccionado).length > 0 ? (
+                    <div className="horario-grid">
+                      {diasSemana.map(dia => {
+                        const horasDisponiblesDelDia = obtenerHorasDisponiblesPorDia(dia);
+                        const fechaDia = obtenerFechaDelDia(dia);
+                        const esPasado = new Date(fechaDia) < new Date().setHours(0, 0, 0, 0);
+                        
+                        return (
+                          <div key={dia} className={`dia-horario ${horasDisponiblesDelDia.length === 0 || esPasado ? 'no-disponible' : ''}`}>
+                            <div className="dia-header-horario">
+                              <h5>{dia.charAt(0).toUpperCase() + dia.slice(1)}</h5>
+                              <small>{new Date(fechaDia).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</small>
+                              {esPasado && <span className="dia-pasado">Pasado</span>}
+                            </div>
+                            
+                            <div className="horas-disponibles">
+                              {horasDisponiblesDelDia.length > 0 && !esPasado ? (
+                                horasDisponiblesDelDia.map(hora => {
+                                  const estaOcupado = !verificarDisponibilidadHora(dia, hora);
+                                  return (
+                                    <button
+                                      key={hora}
+                                      type="button"
+                                      className={`hora-slot ${newCita.dia === dia && newCita.hora === hora ? 'selected' : ''} ${estaOcupado ? 'ocupado' : ''}`}
+                                      onClick={() => {
+                                        if (!estaOcupado) {
+                                          setNewCita({ ...newCita, dia, hora });
+                                        }
+                                      }}
+                                      disabled={estaOcupado}
+                                    >
+                                      <span className="hora-time">{hora}</span>
+                                      <span className="hora-status">
+                                        {estaOcupado ? '❌ Ocupado' : '✅ Libre'}
+                                      </span>
+                                    </button>
+                                  );
+                                })
+                              ) : (
+                                <div className="no-horas">
+                                  {esPasado ? 'Día pasado' : 'Sin horarios disponibles'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="no-horario-encontrado">
+                      <p>⚠️ El docente no ha configurado su horario de disponibilidad.</p>
+                      <p>Contacta directamente al docente para coordinar la cita.</p>
+                    </div>
+                  )}
                 </div>
+              )}
 
-                <div className="form-group">
-                  <label className="form-label">Hora</label>
-                  <select
-                    name="hora"
-                    value={newCita.hora}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    required
-                  >
-                    <option value="">Seleccionar hora</option>
-                    <option value="08:00">08:00 AM</option>
-                    <option value="09:00">09:00 AM</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="13:00">01:00 PM</option>
-                    <option value="14:00">02:00 PM</option>
-                    <option value="15:00">03:00 PM</option>
-                  </select>
+              {/* 🔥 INFORMACIÓN DE LA CITA SELECCIONADA */}
+              {newCita.dia && newCita.hora && (
+                <div className="cita-seleccionada">
+                  <h4 className="selection-title">📋 Cita Seleccionada</h4>
+                  <div className="selection-details">
+                    <div className="selection-item">
+                      <span className="selection-label">Día:</span>
+                      <span className="selection-value">{newCita.dia.charAt(0).toUpperCase() + newCita.dia.slice(1)}</span>
+                    </div>
+                    <div className="selection-item">
+                      <span className="selection-label">Fecha:</span>
+                      <span className="selection-value">{formatearFecha(obtenerFechaDelDia(newCita.dia))}</span>
+                    </div>
+                    <div className="selection-item">
+                      <span className="selection-label">Hora:</span>
+                      <span className="selection-value">{newCita.hora} - {obtenerHoraFin(newCita.hora)}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">Motivo de la Cita</label>
@@ -843,17 +1046,6 @@ function DashboardPadre() {
                   placeholder="Describe el motivo de la reunión con el docente..."
                   required
                 />
-              </div>
-
-              <div className="form-info">
-                <div className="info-box">
-                  <h4>📋 Información importante:</h4>
-                  <ul>
-                    <li>• Tu cita quedará en estado "Pendiente" hasta que el docente la confirme</li>
-                    <li>• Recibirás una notificación cuando sea confirmada</li>
-                    <li>• Puedes cancelar la cita si es necesario</li>
-                  </ul>
-                </div>
               </div>
 
               <div className="form-actions">
