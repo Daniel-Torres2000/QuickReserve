@@ -4,9 +4,11 @@ import axios from 'axios';
 import '../css/Login.css';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -47,25 +49,18 @@ function Login() {
       const userData = response.data;
 
       // 3. Guardar datos del usuario y token
-      if (formData.remember) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('userData', JSON.stringify(userData));
-      } else {
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('userData', JSON.stringify(userData));
-      }
+      login(userData, token, formData.remember);
 
       console.log('Usuario autenticado con éxito:', userData);
-      setMessage(`Bienvenido, ${userData.name} (${userData.role})`);
 
       // 4. Redirigir según el rol después de un breve delay
       setTimeout(() => {
         if (userData.role === 'docente') {
-          navigate('/dashboard/docente');
+          navigate('/dashboard-docente');
         } else if (userData.role === 'padre') {
-          navigate('/dashboard/padre');
+          navigate('/dashboard-padre');
         } else if (userData.role === 'admin') {
-          navigate('/dashboard/admin');
+          navigate('/dashboard-administrador');
         } else {
           navigate('/dashboard');
         }

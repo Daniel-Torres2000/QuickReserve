@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../css/DashboardAdministrador.css';
+import { useAuth } from '../context/AuthContext'; // ← IMPORTAR CONTEXTO
 import {
   ChartBarIcon,
   UsersIcon,
@@ -10,12 +11,17 @@ import {
 
 function DashboardAdministrador() {
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [adminData] = useState({
-    name: 'Admin. María Rodríguez',
-    email: 'admin@colegio.edu',
-    role: 'Super Administrador',
-    phone: '+502 9876-5432'
-  });
+  
+  // 🔥 OBTENER DATOS REALES DEL USUARIO
+  const { user, logout } = useAuth();
+  
+  // 🔄 REEMPLAZAR useState hardcodeado por datos dinámicos
+  const adminData = {
+    name: user?.name || 'Administrador',
+    email: user?.email || '',
+    role: user?.role === 'administrador' ? 'Super Administrador' : (user?.role || 'Admin'),
+    phone: user?.telefono || user?.phone || 'No disponible'
+  };
 
   // Estados para métricas del dashboard
   const [metricas] = useState({
@@ -82,6 +88,16 @@ function DashboardAdministrador() {
   });
 
   const [filtroUsuarios, setFiltroUsuarios] = useState('todos');
+
+  // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // El contexto manejará la redirección automáticamente
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -431,6 +447,18 @@ function DashboardAdministrador() {
     </div>
   );
 
+  // 🔍 VERIFICAR SI EL USUARIO ESTÁ CARGADO
+  if (!user) {
+    return (
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>Cargando panel de administración...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       {/* Sidebar Navigation */}
@@ -487,7 +515,7 @@ function DashboardAdministrador() {
         </nav>
         
         <div className="sidebar-footer">
-          <button className="logout-button" data-tooltip="Cerrar Sesión">
+          <button className="logout-button" data-tooltip="Cerrar Sesión" onClick={handleLogout}>
             <ArrowRightOnRectangleIcon className="nav-icon w-6 h-6" />
             <span className="nav-text">Cerrar Sesión</span>
           </button>

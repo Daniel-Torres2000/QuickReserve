@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../css/DashboardDocente.css';
+import { useAuth } from '../context/AuthContext'; // ← IMPORTAR CONTEXTO
 import {
   CalendarIcon,
   UserIcon,
@@ -10,20 +11,25 @@ import {
 
 function DashboardDocente() {
   const [activeSection, setActiveSection] = useState('calendario');
-  const [docenteData] = useState({
-    name: 'Prof. Juan Pérez',
-    email: 'juan.perez@colegio.edu',
-    subject: 'Matemáticas',
-    grade: '5to Grado',
-    phone: '+502 1234-5678',
-    schedule: {
+  
+  // 🔥 OBTENER DATOS REALES DEL USUARIO
+  const { user, logout } = useAuth();
+  
+  // 🔄 REEMPLAZAR useState hardcodeado por datos dinámicos
+  const docenteData = {
+    name: user?.name || 'Docente',
+    email: user?.email || '',
+    subject: user?.materia || user?.subject || 'Materia no asignada',
+    grade: user?.grado || user?.grade || 'Grado no asignado',
+    phone: user?.telefono || user?.phone || 'No disponible',
+    schedule: user?.horario || {
       lunes: '8:00 - 16:00',
       martes: '8:00 - 16:00',
       miercoles: '8:00 - 14:00',
       jueves: '8:00 - 16:00',
       viernes: '8:00 - 12:00'
     }
-  });
+  };
 
   const [citasSemana, setCitasSemana] = useState([
     {
@@ -91,6 +97,16 @@ function DashboardDocente() {
   });
 
   const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+
+  // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // El contexto manejará la redirección automáticamente
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -298,6 +314,18 @@ function DashboardDocente() {
     </div>
   );
 
+  // 🔍 VERIFICAR SI EL USUARIO ESTÁ CARGADO
+  if (!user) {
+    return (
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>Cargando información del docente...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       {/* Sidebar Navigation */}
@@ -354,7 +382,7 @@ function DashboardDocente() {
         </nav>
         
         <div className="sidebar-footer">
-          <button className="logout-button" data-tooltip="Cerrar Sesión">
+          <button className="logout-button" data-tooltip="Cerrar Sesión" onClick={handleLogout}>
             <ArrowRightOnRectangleIcon className="nav-icon w-6 h-6" />
             <span className="nav-text">Cerrar Sesión</span>
           </button>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../css/DashboardPadre.css';
+import { useAuth } from '../context/AuthContext'; // ← IMPORTAR CONTEXTO
 import {
   CalendarIcon,
   UserIcon,
@@ -9,15 +10,19 @@ import {
 
 function DashboardPadre() {
   const [activeSection, setActiveSection] = useState('citas');
-  const [padreData] = useState({
-    name: 'María González',
-    email: 'maria.gonzalez@email.com',
-    phone: '+502 9876-5432',
-    hijos: [
-      { id: 1, nombre: 'Pedro González', grado: '5to Grado', docente: 'Prof. Juan Pérez' },
-      { id: 2, nombre: 'Ana González', grado: '3er Grado', docente: 'Prof. María López' }
+  
+  // 🔥 OBTENER DATOS REALES DEL USUARIO
+  const { user, logout } = useAuth();
+  
+  // 🔄 REEMPLAZAR useState hardcodeado por datos dinámicos
+  const padreData = {
+    name: user?.name || 'Usuario',
+    email: user?.email || '',
+    phone: user?.telefono || user?.phone || 'No disponible',
+    hijos: user?.hijos || [
+      { id: 1, nombre: 'Sin hijos registrados', grado: '', docente: '' }
     ]
-  });
+  };
 
   const [citasProgramadas, setCitasProgramadas] = useState([
     {
@@ -106,6 +111,16 @@ function DashboardPadre() {
     hora: '',
     motivo: ''
   });
+
+  // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // El contexto manejará la redirección automáticamente
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -294,8 +309,8 @@ function DashboardPadre() {
           <div className="hijos-section">
             <h3 className="subsection-title">Mis Hijos</h3>
             <div className="hijos-list">
-              {padreData.hijos.map(hijo => (
-                <div key={hijo.id} className="hijo-card">
+              {padreData.hijos.map((hijo, index) => (
+                <div key={hijo.id || index} className="hijo-card">
                   <div className="hijo-info">
                     <h4 className="hijo-nombre">{hijo.nombre}</h4>
                     <p className="hijo-grado">{hijo.grado}</p>
@@ -365,6 +380,18 @@ function DashboardPadre() {
     </div>
   );
 
+  // 🔍 VERIFICAR SI EL USUARIO ESTÁ CARGADO
+  if (!user) {
+    return (
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>Cargando información del usuario...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       {/* Sidebar Navigation */}
@@ -412,7 +439,7 @@ function DashboardPadre() {
         </nav>
         
         <div className="sidebar-footer">
-          <button className="logout-button" data-tooltip="Cerrar Sesión">
+          <button className="logout-button" data-tooltip="Cerrar Sesión" onClick={handleLogout}>
             <ArrowRightOnRectangleIcon className="nav-icon w-6 h-6" />
             <span className="nav-text">Cerrar Sesión</span>
           </button>
@@ -453,8 +480,8 @@ function DashboardPadre() {
                   required
                 >
                   <option value="">Seleccionar hijo/a</option>
-                  {padreData.hijos.map(hijo => (
-                    <option key={hijo.id} value={hijo.id}>
+                  {padreData.hijos.map((hijo, index) => (
+                    <option key={hijo.id || index} value={hijo.id || index}>
                       {hijo.nombre} - {hijo.grado}
                     </option>
                   ))}
