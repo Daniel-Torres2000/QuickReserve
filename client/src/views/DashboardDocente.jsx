@@ -23,8 +23,7 @@ import {
   deleteDoc, 
   query, 
   where, 
-  getDocs,
-  orderBy 
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig'; // Ajusta la ruta según tu estructura
 
@@ -631,15 +630,6 @@ function DashboardDocente() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewCita({ ...newCita, [name]: value });
-  };
-
-  const formatearFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
   };
 
   // 🔥 RENDERIZAR SECCIONES

@@ -4,11 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   CalendarIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon,
-  PencilIcon,
-  TrashIcon,
-  CheckIcon,
-  XMarkIcon
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 // 🔥 IMPORTAR FIRESTORE
 import { 
@@ -422,29 +418,6 @@ function DashboardPadre() {
       console.error('❌ Error al eliminar cita:', error);
       throw error;
     }
-  };
-
-  // 🔥 FUNCIONES UTILITARIAS
-  const obtenerSemanaFromFecha = (fecha) => {
-    const fechaObj = new Date(fecha);
-    const inicioSemana = new Date(fechaObj);
-    inicioSemana.setDate(fechaObj.getDate() - fechaObj.getDay() + 1);
-    
-    const finSemana = new Date(inicioSemana);
-    finSemana.setDate(inicioSemana.getDate() + 4);
-    
-    const formatoFecha = (fecha) => fecha.toLocaleDateString('es-ES', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    });
-    
-    return `${formatoFecha(inicioSemana)} - ${formatoFecha(finSemana)}`;
-  };
-
-  const obtenerDiaFromFecha = (fecha) => {
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-    const fechaObj = new Date(fecha);
-    return diasSemana[fechaObj.getDay()];
   };
 
   // 🔥 EFECTOS
