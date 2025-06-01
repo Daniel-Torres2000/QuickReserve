@@ -16,7 +16,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../firebase/firebaseConfig';
 
 // Colección de usuarios en Firestore
-const USERS_COLLECTION = 'users';
+const USERS_COLLECTION = 'usuarios';
 
 // Generar contraseña temporal aleatoria
 const generateTempPassword = () => {

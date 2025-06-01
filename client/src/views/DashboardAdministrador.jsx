@@ -14,7 +14,6 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import {
-  createUser,
   updateUser,
   deleteUser,
   toggleUserStatus,
@@ -25,9 +24,11 @@ import {
 } from '../services/usersService';
 
 function DashboardAdministrador() {
+  console.log('🎯 COMPONENTE DASHBOARD RENDERIZANDO');
   const [activeSection, setActiveSection] = useState('dashboard');
   const { user, logout } = useAuth();
-
+// AGREGA ESTA LÍNEA TEMPORAL:
+  console.log('🔥 DASHBOARD CARGADO - EJECUTANDO loadStats');
   // Estados para datos reales
   const [usuarios, setUsuarios] = useState([]);
   const [metricas, setMetricas] = useState({
@@ -94,20 +95,24 @@ function DashboardAdministrador() {
   };
 
   const loadStats = async () => {
-    console.log('🔄 loadStats() iniciando...');
+  console.log('🔄 loadStats() iniciando...');
   try {
     const allUsers = await getAllUsers();
-    console.log('👥 Usuarios obtenidos:', allUsers); 
-    console.log('📊 Cantidad total:', allUsers.length);
+    
+    // AQUÍ es donde filtras los administradores
+    const usuariosSinAdmins = allUsers.filter(user => 
+      user.rol !== 'administrador' && user.role !== 'administrador'
+    );
 
     const stats = {
-      totalUsuarios: allUsers.length,
-      docentesActivos: allUsers.filter(user => user.rol === 'docente').length,
-      coordinadores: allUsers.filter(user => user.rol === 'coordinador').length,
-      administradores: allUsers.filter(user => user.rol === 'administrador').length,
-      padres: allUsers.filter(user => user.rol === 'padre').length,
-      usuariosActivos: allUsers.filter(user => user.activo === true).length
+      totalUsuarios: usuariosSinAdmins.length, // ← CAMBIO AQUÍ: Sin admins
+      docentesActivos: allUsers.filter(user => (user.rol === 'docente' || user.role === 'docente')).length,
+      coordinadores: allUsers.filter(user => (user.rol === 'coordinador' || user.role === 'coordinador')).length,
+      administradores: allUsers.filter(user => (user.rol === 'administrador' || user.role === 'administrador')).length,
+      padres: allUsers.filter(user => (user.rol === 'padre' || user.role === 'padre')).length,
+      usuariosActivos: allUsers.filter(user => (user.activo === true || user.isActive === true)).length
     };
+
     console.log('📈 Stats calculados:', stats);
     setMetricas(stats);
   } catch (error) {
@@ -115,40 +120,76 @@ function DashboardAdministrador() {
   }
 };
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      const createdUser = await createUser(newUser);
-      setUsuarios([createdUser, ...usuarios]);
+const handleCreateUser = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading(true);
+    console.log('🚀 Registrando usuario completo con email...');
+    
+    // 📧 USAR SOLO TU BACKEND - que crea usuario Y envía email
+    const response = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nombre: newUser.nombre,
+        apellido: newUser.apellido,
+        email: newUser.email,
+        telefono: newUser.telefono,
+        role: newUser.role
+      }),
+    });
+    
+    const data = await response.json();
+    console.log('📊 Response:', data);
+    
+    if (response.ok) {
+      console.log('✅ Usuario creado y email enviado exitosamente');
+      
+      // Agregar el nuevo usuario a la lista (simulando la estructura que esperas)
+      const newUserForList = {
+        id: data.uid,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        isActive: true,
+        fechaRegistro: new Date().toLocaleDateString()
+      };
+      
+      setUsuarios([newUserForList, ...usuarios]);
       setNewUser({ nombre: '', apellido: '', email: '', role: 'padre', telefono: '' });
       setShowNewUserModal(false);
-      loadStats(); // Actualizar estadísticas
+      await loadStats();
       setError('');
-      alert(`Usuario creado exitosamente. Contraseña temporal: ${createdUser.tempPassword}`);
-    } catch (error) {
-      setError('Error al crear usuario: ' + error.message);
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(data.error || 'Error al crear usuario');
     }
-  };
+  } catch (error) {
+    console.error('❌ Error:', error);
+    setError('Error al crear usuario: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEditUser = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      await updateUser(selectedUser.id, editUser);
-      await loadUsers(); // Recargar lista
-      setShowEditModal(false);
-      setSelectedUser(null);
-      setEditUser({});
-      setError('');
-    } catch (error) {
-      setError('Error al actualizar usuario: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  try {
+    setLoading(true);
+    await updateUser(selectedUser.id, editUser);
+    await loadUsers(); // Recargar lista
+    await loadStats(); 
+    setShowEditModal(false);
+    setSelectedUser(null);
+    setEditUser({});
+    setError('');
+  } catch (error) {
+    setError('Error al actualizar usuario: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteUser = async () => {
     try {
