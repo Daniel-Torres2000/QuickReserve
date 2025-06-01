@@ -1,71 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../css/DashboardAdministrador.css';
-import { useAuth } from '../context/AuthContext'; // ← IMPORTAR CONTEXTO
+import { useAuth } from '../context/AuthContext';
+import { getAllUsers } from '../services/usersService';
 import {
   ChartBarIcon,
   UsersIcon,
   CogIcon,
   ChartPieIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  PencilIcon,
+  TrashIcon,
+  KeyIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import {
+  createUser,
+  updateUser,
+  deleteUser,
+  toggleUserStatus,
+  resetUserPassword,
+  //getUserStats,
+  getUsersByRole,
+  getUsersByStatus
+} from '../services/usersService';
 
 function DashboardAdministrador() {
   const [activeSection, setActiveSection] = useState('dashboard');
-  
-  // 🔥 OBTENER DATOS REALES DEL USUARIO
   const { user, logout } = useAuth();
-  
-  // 🔄 REEMPLAZAR useState hardcodeado por datos dinámicos
-  const adminData = {
-    name: user?.name || 'Administrador',
-    email: user?.email || '',
-    role: user?.role === 'administrador' ? 'Super Administrador' : (user?.role || 'Admin'),
-    phone: user?.telefono || user?.phone || 'No disponible'
-  };
 
-  // Estados para métricas del dashboard
-  const [metricas] = useState({
-    totalUsuarios: 45,
-    docentesActivos: 18,
-    coordinadores: 4,
-    administradores: 2,
-    citasSemana: 127,
-    citasHoy: 8,
-    usuariosActivos: 38
+  // Estados para datos reales
+  const [usuarios, setUsuarios] = useState([]);
+  const [metricas, setMetricas] = useState({
+    totalUsuarios: 0,
+    docentesActivos: 0,
+    coordinadores: 0,
+    administradores: 0,
+    padres: 0,
+    usuariosActivos: 0
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Estados para gestión de usuarios
-  const [usuarios, setUsuarios] = useState([
-    {
-      id: 1,
-      nombre: 'Prof. Juan Pérez',
-      email: 'juan.perez@colegio.edu',
-      rol: 'Docente',
-      materia: 'Matemáticas',
-      estado: 'Activo',
-      fechaRegistro: '2025-01-15'
-    },
-    {
-      id: 2,
-      nombre: 'Coord. Ana López',
-      email: 'ana.lopez@colegio.edu',
-      rol: 'Coordinador',
-      materia: 'Primaria',
-      estado: 'Activo',
-      fechaRegistro: '2025-01-10'
-    },
-    {
-      id: 3,
-      nombre: 'Prof. Carlos Silva',
-      email: 'carlos.silva@colegio.edu',
-      rol: 'Docente',
-      materia: 'Historia',
-      estado: 'Inactivo',
-      fechaRegistro: '2025-02-01'
-    }
-  ]);
+  // Estados para modales
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  // Estados para configuración del sistema
+  // Estados para formularios
+  const [newUser, setNewUser] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    role: 'padre',
+    telefono: ''
+  });
+  const [editUser, setEditUser] = useState({});
+  const [filtroUsuarios, setFiltroUsuarios] = useState('todos');
+
+  // Configuración del sistema (mantener estático por ahora)
   const [configuracion] = useState({
     horariosDisponibles: {
       inicio: '08:00',
@@ -77,73 +70,247 @@ function DashboardAdministrador() {
     materias: ['Matemáticas', 'Español', 'Ciencias', 'Historia', 'Inglés', 'Educación Física']
   });
 
-  // Estados para modales
-  const [showNewUserModal, setShowNewUserModal] = useState(false);
-  const [newUser, setNewUser] = useState({
-    nombre: '',
-    email: '',
-    rol: 'Docente',
-    materia: '',
-    telefono: ''
-  });
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    console.log('🚀 useEffect ejecutándose...');
+    loadUsers();
+    loadStats();
+  }, []);
 
-  const [filtroUsuarios, setFiltroUsuarios] = useState('todos');
+  // 🔥 FUNCIONES CRUD REALES
 
-  // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await getAllUsers();
+      setUsuarios(usersData);
+      setError('');
+    } catch (error) {
+      setError('Error al cargar usuarios: ' + error.message);
+      console.error('Error loading users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    console.log('🔄 loadStats() iniciando...');
+  try {
+    const allUsers = await getAllUsers();
+    console.log('👥 Usuarios obtenidos:', allUsers); 
+    console.log('📊 Cantidad total:', allUsers.length);
+
+    const stats = {
+      totalUsuarios: allUsers.length,
+      docentesActivos: allUsers.filter(user => user.rol === 'docente').length,
+      coordinadores: allUsers.filter(user => user.rol === 'coordinador').length,
+      administradores: allUsers.filter(user => user.rol === 'administrador').length,
+      padres: allUsers.filter(user => user.rol === 'padre').length,
+      usuariosActivos: allUsers.filter(user => user.activo === true).length
+    };
+    console.log('📈 Stats calculados:', stats);
+    setMetricas(stats);
+  } catch (error) {
+    console.error('Error loading stats:', error);
+  }
+};
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const createdUser = await createUser(newUser);
+      setUsuarios([createdUser, ...usuarios]);
+      setNewUser({ nombre: '', apellido: '', email: '', role: 'padre', telefono: '' });
+      setShowNewUserModal(false);
+      loadStats(); // Actualizar estadísticas
+      setError('');
+      alert(`Usuario creado exitosamente. Contraseña temporal: ${createdUser.tempPassword}`);
+    } catch (error) {
+      setError('Error al crear usuario: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await updateUser(selectedUser.id, editUser);
+      await loadUsers(); // Recargar lista
+      setShowEditModal(false);
+      setSelectedUser(null);
+      setEditUser({});
+      setError('');
+    } catch (error) {
+      setError('Error al actualizar usuario: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      setLoading(true);
+      await deleteUser(selectedUser.id);
+      setUsuarios(usuarios.filter(u => u.id !== selectedUser.id));
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+      loadStats(); // Actualizar estadísticas
+      setError('');
+    } catch (error) {
+      setError('Error al eliminar usuario: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (userId, currentStatus) => {
+    try {
+      setLoading(true);
+      await toggleUserStatus(userId, currentStatus);
+      await loadUsers(); // Recargar lista
+      loadStats(); // Actualizar estadísticas
+      setError('');
+    } catch (error) {
+      setError('Error al cambiar estado: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (userId) => {
+    try {
+      setLoading(true);
+      const newPassword = await resetUserPassword(userId);
+      alert(`Nueva contraseña temporal: ${newPassword}`);
+      setError('');
+    } catch (error) {
+      setError('Error al resetear contraseña: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔥 FUNCIONES DE FILTRADO MEJORADAS
+
+  const filtrarUsuarios = useCallback(async () => {
+  try {
+    setLoading(true);
+    let filteredUsers = [];
+
+    switch (filtroUsuarios) {
+      case 'todos':
+        filteredUsers = await getAllUsers();
+        break;
+      case 'activos':
+        filteredUsers = await getUsersByStatus(true);
+        break;
+      case 'inactivos':
+        filteredUsers = await getUsersByStatus(false);
+        break;
+      case 'docente':
+      case 'coordinador':
+      case 'administrador':
+      case 'padre':
+        filteredUsers = await getUsersByRole(filtroUsuarios);
+        break;
+      default:
+        filteredUsers = await getAllUsers(); // ← Cambiar esta línea
+    }
+
+    return filteredUsers;
+  } catch (error) {
+    console.error('Error filtering users:', error);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+}, [filtroUsuarios]); // ← Solo filtroUsuarios
+
+  useEffect(() => {
+    const applyFilter = async () => {
+      const filtered = await filtrarUsuarios();
+      setUsuarios(filtered);
+    };
+    applyFilter();
+  }, [filtroUsuarios, filtrarUsuarios]); // ← Agregar la función también
+
+  // 🔥 MANEJADORES DE MODALES
+
+  const openEditModal = (usuario) => {
+    setSelectedUser(usuario);
+    setEditUser({
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      email: usuario.email,
+      role: usuario.role,
+      telefono: usuario.telefono
+    });
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (usuario) => {
+    setSelectedUser(usuario);
+    setShowDeleteModal(true);
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
-      // El contexto manejará la redirección automáticamente
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e, isEdit = false) => {
     const { name, value } = e.target;
-    setNewUser({ ...newUser, [name]: value });
+    if (isEdit) {
+      setEditUser({ ...editUser, [name]: value });
+    } else {
+      setNewUser({ ...newUser, [name]: value });
+    }
   };
 
-  const handleSubmitUser = (e) => {
-    e.preventDefault();
-    const nuevoUsuario = {
-      id: usuarios.length + 1,
-      nombre: newUser.nombre,
-      email: newUser.email,
-      rol: newUser.rol,
-      materia: newUser.materia,
-      estado: 'Activo',
-      fechaRegistro: new Date().toISOString().split('T')[0]
-    };
-    
-    setUsuarios([...usuarios, nuevoUsuario]);
-    setNewUser({ nombre: '', email: '', rol: 'Docente', materia: '', telefono: '' });
-    setShowNewUserModal(false);
+  // Obtener datos del administrador
+  const adminData = {
+    name: user?.name || 'Administrador',
+    email: user?.email || '',
+    role: user?.role === 'administrador' ? 'Super Administrador' : (user?.role || 'Admin'),
+    phone: user?.telefono || user?.phone || 'No disponible'
   };
 
-  const toggleUserStatus = (id) => {
-    setUsuarios(usuarios.map(usuario => 
-      usuario.id === id 
-        ? { ...usuario, estado: usuario.estado === 'Activo' ? 'Inactivo' : 'Activo' }
-        : usuario
-    ));
-  };
+  // Mostrar loading si no hay usuario
+  if (!user) {
+    return (
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>Cargando panel de administración...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const filtrarUsuarios = () => {
-    if (filtroUsuarios === 'todos') return usuarios;
-    if (filtroUsuarios === 'activos') return usuarios.filter(u => u.estado === 'Activo');
-    if (filtroUsuarios === 'inactivos') return usuarios.filter(u => u.estado === 'Inactivo');
-    return usuarios.filter(u => u.rol === filtroUsuarios);
-  };
+  // 🔥 RENDERIZAR SECCIONES
 
   const renderDashboard = () => (
     <div className="dashboard-section">
       <h2 className="section-title">Panel de Control</h2>
       
+      {/* Mostrar error si existe */}
+      {error && (
+        <div className="error-banner">
+          <ExclamationTriangleIcon className="w-5 h-5" />
+          <span>{error}</span>
+          <button onClick={() => setError('')}>×</button>
+        </div>
+      )}
+      
       {/* Métricas principales */}
       <div className="metricas-grid">
         <div className="metrica-card">
-          <div className="metrica-icon">👥</div>
           <div className="metrica-content">
             <h3 className="metrica-value">{metricas.totalUsuarios}</h3>
             <p className="metrica-label">Total Usuarios</p>
@@ -151,26 +318,23 @@ function DashboardAdministrador() {
         </div>
         
         <div className="metrica-card">
-          <div className="metrica-icon">👨‍🏫</div>
           <div className="metrica-content">
             <h3 className="metrica-value">{metricas.docentesActivos}</h3>
-            <p className="metrica-label">Docentes Activos</p>
+            <p className="metrica-label">Docentes</p>
           </div>
         </div>
         
         <div className="metrica-card">
-          <div className="metrica-icon">📅</div>
           <div className="metrica-content">
-            <h3 className="metrica-value">{metricas.citasSemana}</h3>
-            <p className="metrica-label">Citas esta Semana</p>
+            <h3 className="metrica-value">{metricas.coordinadores}</h3>
+            <p className="metrica-label">Coordinadores</p>
           </div>
         </div>
         
         <div className="metrica-card">
-          <div className="metrica-icon">🟢</div>
           <div className="metrica-content">
-            <h3 className="metrica-value">{metricas.usuariosActivos}</h3>
-            <p className="metrica-label">Usuarios Activos</p>
+            <h3 className="metrica-value">{metricas.padres}</h3>
+            <p className="metrica-label">Padres de Familia</p>
           </div>
         </div>
       </div>
@@ -185,7 +349,7 @@ function DashboardAdministrador() {
               <span className="rol-count">{metricas.docentesActivos}</span>
             </div>
             <div className="rol-progress">
-              <div className="progress-bar" style={{width: `${(metricas.docentesActivos / metricas.totalUsuarios) * 100}%`}}></div>
+              <div className="progress-bar" style={{width: `${metricas.totalUsuarios > 0 ? (metricas.docentesActivos / metricas.totalUsuarios) * 100 : 0}%`}}></div>
             </div>
           </div>
           
@@ -195,45 +359,17 @@ function DashboardAdministrador() {
               <span className="rol-count">{metricas.coordinadores}</span>
             </div>
             <div className="rol-progress">
-              <div className="progress-bar" style={{width: `${(metricas.coordinadores / metricas.totalUsuarios) * 100}%`}}></div>
+              <div className="progress-bar" style={{width: `${metricas.totalUsuarios > 0 ? (metricas.coordinadores / metricas.totalUsuarios) * 100 : 0}%`}}></div>
             </div>
           </div>
           
           <div className="rol-card">
             <div className="rol-info">
-              <span className="rol-nombre">Administradores</span>
-              <span className="rol-count">{metricas.administradores}</span>
+              <span className="rol-nombre">Padres</span>
+              <span className="rol-count">{metricas.padres}</span>
             </div>
             <div className="rol-progress">
-              <div className="progress-bar" style={{width: `${(metricas.administradores / metricas.totalUsuarios) * 100}%`}}></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Actividad reciente */}
-      <div className="actividad-section">
-        <h3 className="subsection-title">Actividad Reciente</h3>
-        <div className="actividad-list">
-          <div className="actividad-item">
-            <div className="actividad-icon">👤</div>
-            <div className="actividad-content">
-              <p className="actividad-text">Nuevo docente registrado: Prof. Carlos Silva</p>
-              <span className="actividad-time">Hace 2 horas</span>
-            </div>
-          </div>
-          <div className="actividad-item">
-            <div className="actividad-icon">📅</div>
-            <div className="actividad-content">
-              <p className="actividad-text">15 nuevas citas programadas hoy</p>
-              <span className="actividad-time">Hace 4 horas</span>
-            </div>
-          </div>
-          <div className="actividad-item">
-            <div className="actividad-icon">⚙️</div>
-            <div className="actividad-content">
-              <p className="actividad-text">Configuración de horarios actualizada</p>
-              <span className="actividad-time">Ayer</span>
+              <div className="progress-bar" style={{width: `${metricas.totalUsuarios > 0 ? (metricas.padres / metricas.totalUsuarios) * 100 : 0}%`}}></div>
             </div>
           </div>
         </div>
@@ -248,62 +384,108 @@ function DashboardAdministrador() {
         <button 
           className="new-cita-button"
           onClick={() => setShowNewUserModal(true)}
+          disabled={loading}
         >
           + Nuevo Usuario
         </button>
       </div>
+      
+      {/* Mostrar error si existe */}
+      {error && (
+        <div className="error-banner">
+          <ExclamationTriangleIcon className="w-5 h-5" />
+          <span>{error}</span>
+          <button onClick={() => setError('')}>×</button>
+        </div>
+      )}
       
       <div className="usuarios-filters">
         <select 
           className="filter-select"
           value={filtroUsuarios}
           onChange={(e) => setFiltroUsuarios(e.target.value)}
+          disabled={loading}
         >
           <option value="todos">Todos los usuarios</option>
           <option value="activos">Usuarios activos</option>
           <option value="inactivos">Usuarios inactivos</option>
-          <option value="Docente">Solo Docentes</option>
-          <option value="Coordinador">Solo Coordinadores</option>
-          <option value="Administrador">Solo Administradores</option>
+          <option value="docente">Solo Docentes</option>
+          <option value="coordinador">Solo Coordinadores</option>
+          <option value="administrador">Solo Administradores</option>
+          <option value="padre">Solo Padres</option>
         </select>
       </div>
       
+      {loading && (
+        <div className="loading-spinner-small">Cargando usuarios...</div>
+      )}
+      
       <div className="usuarios-list">
-        {filtrarUsuarios().map(usuario => (
+        {usuarios.map(usuario => (
           <div key={usuario.id} className="usuario-card">
             <div className="usuario-header">
               <div className="usuario-info">
                 <div className="usuario-avatar">
-                  {usuario.nombre.split(' ').map(n => n[0]).join('')}
+                  {usuario.nombre ? (usuario.nombre[0] + (usuario.apellido?.[0] || '')) : usuario.name?.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="usuario-details">
-                  <h3 className="usuario-nombre">{usuario.nombre}</h3>
+                  <h3 className="usuario-nombre">{usuario.name || `${usuario.nombre} ${usuario.apellido}`}</h3>
                   <p className="usuario-email">{usuario.email}</p>
-                  <p className="usuario-materia">{usuario.materia}</p>
+                  <p className="usuario-telefono">{usuario.telefono}</p>
+                  <p className="usuario-fecha">Registrado: {usuario.fechaRegistro}</p>
                 </div>
               </div>
               <div className="usuario-status">
-                <span className={`status-badge ${usuario.estado.toLowerCase()}`}>
-                  {usuario.estado}
+                <span className={`status-badge ${usuario.isActive ? 'active' : 'inactive'}`}>
+                  {usuario.isActive ? 'Activo' : 'Inactivo'}
                 </span>
-                <span className={`rol-badge ${usuario.rol.toLowerCase()}`}>
-                  {usuario.rol}
+                <span className={`rol-badge ${usuario.role}`}>
+                  {usuario.role.charAt(0).toUpperCase() + usuario.role.slice(1)}
                 </span>
               </div>
             </div>
             
             <div className="usuario-actions">
               <button 
-                className={`action-button ${usuario.estado === 'Activo' ? 'deactivate' : 'activate'}`}
-                onClick={() => toggleUserStatus(usuario.id)}
+                className={`action-button ${usuario.isActive ? 'deactivate' : 'activate'}`}
+                onClick={() => handleToggleStatus(usuario.id, usuario.isActive)}
+                disabled={loading}
               >
-                {usuario.estado === 'Activo' ? 'Desactivar' : 'Activar'}
+                {usuario.isActive ? 'Desactivar' : 'Activar'}
               </button>
-              <button className="action-button edit">Editar</button>
-              <button className="action-button reset">Reset Password</button>
+              <button 
+                className="action-button edit"
+                onClick={() => openEditModal(usuario)}
+                disabled={loading}
+              >
+                <PencilIcon className="w-4 h-4" />
+                Editar
+              </button>
+              <button 
+                className="action-button reset"
+                onClick={() => handleResetPassword(usuario.id)}
+                disabled={loading}
+              >
+                <KeyIcon className="w-4 h-4" />
+                Reset Password
+              </button>
+              <button 
+                className="action-button delete"
+                onClick={() => openDeleteModal(usuario)}
+                disabled={loading}
+              >
+                <TrashIcon className="w-4 h-4" />
+                Eliminar
+              </button>
             </div>
           </div>
         ))}
+        
+        {usuarios.length === 0 && !loading && (
+          <div className="empty-state">
+            <p>No hay usuarios que coincidan con el filtro seleccionado.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -345,12 +527,13 @@ function DashboardAdministrador() {
         </div>
         
         <div className="config-card">
-          <h3 className="config-title">Materias Disponibles</h3>
+          <h3 className="config-title">Roles Disponibles</h3>
           <div className="config-content">
-            <div className="materias-list">
-              {configuracion.materias.map(materia => (
-                <span key={materia} className="materia-badge">{materia}</span>
-              ))}
+            <div className="roles-list">
+              <span className="role-badge">Padre de Familia</span>
+              <span className="role-badge">Docente</span>
+              <span className="role-badge">Coordinador</span>
+              <span className="role-badge">Administrador</span>
             </div>
           </div>
         </div>
@@ -382,56 +565,54 @@ function DashboardAdministrador() {
       
       <div className="reportes-grid">
         <div className="reporte-card">
-          <h3 className="reporte-title">Citas por Mes</h3>
+          <h3 className="reporte-title">Usuarios por Rol</h3>
           <div className="reporte-content">
             <div className="stat-item">
-              <span className="stat-label">Enero 2025:</span>
-              <span className="stat-value">245 citas</span>
+              <span className="stat-label">Padres de Familia:</span>
+              <span className="stat-value">{metricas.padres} usuarios</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Febrero 2025:</span>
-              <span className="stat-value">298 citas</span>
+              <span className="stat-label">Docentes:</span>
+              <span className="stat-value">{metricas.docentesActivos} usuarios</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Marzo 2025:</span>
-              <span className="stat-value">189 citas</span>
+              <span className="stat-label">Coordinadores:</span>
+              <span className="stat-value">{metricas.coordinadores} usuarios</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Administradores:</span>
+              <span className="stat-value">{metricas.administradores} usuarios</span>
             </div>
           </div>
         </div>
         
         <div className="reporte-card">
-          <h3 className="reporte-title">Docentes más Solicitados</h3>
+          <h3 className="reporte-title">Estado de Usuarios</h3>
           <div className="reporte-content">
             <div className="stat-item">
-              <span className="stat-label">Prof. Ana García:</span>
-              <span className="stat-value">45 citas</span>
+              <span className="stat-label">Usuarios Activos:</span>
+              <span className="stat-value">{metricas.usuariosActivos}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Prof. Juan Pérez:</span>
-              <span className="stat-value">38 citas</span>
+              <span className="stat-label">Usuarios Inactivos:</span>
+              <span className="stat-value">{metricas.totalUsuarios - metricas.usuariosActivos}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Prof. María López:</span>
-              <span className="stat-value">32 citas</span>
+              <span className="stat-label">Total de Usuarios:</span>
+              <span className="stat-value">{metricas.totalUsuarios}</span>
             </div>
           </div>
         </div>
         
         <div className="reporte-card">
-          <h3 className="reporte-title">Horarios más Populares</h3>
+          <h3 className="reporte-title">Últimos Registros</h3>
           <div className="reporte-content">
-            <div className="stat-item">
-              <span className="stat-label">10:00 - 10:30:</span>
-              <span className="stat-value">78 citas</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">11:00 - 11:30:</span>
-              <span className="stat-value">65 citas</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">14:00 - 14:30:</span>
-              <span className="stat-value">52 citas</span>
-            </div>
+            {usuarios.slice(0, 3).map(usuario => (
+              <div key={usuario.id} className="stat-item">
+                <span className="stat-label">{usuario.name}:</span>
+                <span className="stat-value">{usuario.fechaRegistro}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -447,25 +628,13 @@ function DashboardAdministrador() {
     </div>
   );
 
-  // 🔍 VERIFICAR SI EL USUARIO ESTÁ CARGADO
-  if (!user) {
-    return (
-      <div className="loading-container">
-        <div className="loading-content">
-          <div className="loading-spinner"></div>
-          <p>Cargando panel de administración...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="dashboard-container">
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo">
-            <span className="logo-text">EduCitas</span>
+            <span className="logo-text">QuickReserve</span>
           </div>
           <div className="user-info">
             <div className="user-avatar">{adminData.name.split(' ').map(n => n[0]).join('')}</div>
@@ -546,26 +715,40 @@ function DashboardAdministrador() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmitUser} className="cita-form">
-              <div className="form-group">
-                <label className="form-label">Nombre Completo</label>
-                <input
-                  type="text"
-                  name="nombre"
-                  value={newUser.nombre}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  required
-                />
+            <form onSubmit={handleCreateUser} className="cita-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={newUser.nombre}
+                    onChange={(e) => handleInputChange(e, false)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Apellido</label>
+                  <input
+                    type="text"
+                    name="apellido"
+                    value={newUser.apellido}
+                    onChange={(e) => handleInputChange(e, false)}
+                    className="form-input"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Email</label>
+                <label className="form-label">Correo Electrónico</label>
                 <input
                   type="email"
                   name="email"
                   value={newUser.email}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange(e, false)}
                   className="form-input"
                   required
                 />
@@ -575,44 +758,30 @@ function DashboardAdministrador() {
                 <div className="form-group">
                   <label className="form-label">Rol</label>
                   <select
-                    name="rol"
-                    value={newUser.rol}
-                    onChange={handleInputChange}
+                    name="role"
+                    value={newUser.role}
+                    onChange={(e) => handleInputChange(e, false)}
                     className="form-input"
                     required
                   >
-                    <option value="Docente">Docente</option>
-                    <option value="Coordinador">Coordinador</option>
-                    <option value="Administrador">Administrador</option>
+                    <option value="padre">Padre de Familia</option>
+                    <option value="docente">Docente</option>
+                    <option value="coordinador">Coordinador</option>
+                    <option value="administrador">Administrador</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Materia/Área</label>
-                  <select
-                    name="materia"
-                    value={newUser.materia}
-                    onChange={handleInputChange}
+                  <label className="form-label">Teléfono</label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={newUser.telefono}
+                    onChange={(e) => handleInputChange(e, false)}
                     className="form-input"
-                    required
-                  >
-                    <option value="">Seleccionar...</option>
-                    {configuracion.materias.map(materia => (
-                      <option key={materia} value={materia}>{materia}</option>
-                    ))}
-                  </select>
+                    placeholder="ej: +502 1234-5678"
+                  />
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Teléfono</label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={newUser.telefono}
-                  onChange={handleInputChange}
-                  className="form-input"
-                />
               </div>
 
               <div className="form-actions">
@@ -620,17 +789,172 @@ function DashboardAdministrador() {
                   type="button" 
                   className="cancel-button"
                   onClick={() => setShowNewUserModal(false)}
+                  disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
                   className="submit-button"
+                  disabled={loading}
                 >
-                  Registrar Usuario
+                  {loading ? 'Creando...' : 'Registrar Usuario'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para editar usuario */}
+      {showEditModal && selectedUser && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Editar Usuario</h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowEditModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditUser} className="cita-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={editUser.nombre}
+                    onChange={(e) => handleInputChange(e, true)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Apellido</label>
+                  <input
+                    type="text"
+                    name="apellido"
+                    value={editUser.apellido}
+                    onChange={(e) => handleInputChange(e, true)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Correo Electrónico</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={editUser.email}
+                  onChange={(e) => handleInputChange(e, true)}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Rol</label>
+                  <select
+                    name="role"
+                    value={editUser.role}
+                    onChange={(e) => handleInputChange(e, true)}
+                    className="form-input"
+                    required
+                  >
+                    <option value="padre">Padre de Familia</option>
+                    <option value="docente">Docente</option>
+                    <option value="coordinador">Coordinador</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Teléfono</label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={editUser.telefono}
+                    onChange={(e) => handleInputChange(e, true)}
+                    className="form-input"
+                    placeholder="ej: +502 1234-5678"
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="cancel-button"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Actualizando...' : 'Actualizar Usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación para eliminar */}
+      {showDeleteModal && selectedUser && (
+        <div className="modal-overlay">
+          <div className="modal-content confirm-modal">
+            <div className="modal-header">
+              <h2 className="modal-title">Confirmar Eliminación</h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="confirm-content">
+              <div className="warning-icon">
+                <ExclamationTriangleIcon className="w-16 h-16 text-red-500" />
+              </div>
+              <p className="confirm-message">
+                ¿Estás seguro de que deseas eliminar al usuario <strong>{selectedUser.name}</strong>?
+              </p>
+              <p className="confirm-submessage">
+                Esta acción no se puede deshacer y se eliminará toda la información del usuario.
+              </p>
+            </div>
+
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="cancel-button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                className="delete-button"
+                onClick={handleDeleteUser}
+                disabled={loading}
+              >
+                {loading ? 'Eliminando...' : 'Eliminar Usuario'}
+              </button>
+            </div>
           </div>
         </div>
       )}

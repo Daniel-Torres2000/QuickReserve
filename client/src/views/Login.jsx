@@ -46,25 +46,22 @@ function Login() {
         }
       );
 
-      const userData = response.data;
+      let userData = response.data;
+
+      // 🔥 NORMALIZAR ROLES PARA CONSISTENCIA
+      if (userData.role === 'admin') {
+        userData = { ...userData, role: 'administrador' };
+      }
 
       // 3. Guardar datos del usuario y token
       login(userData, token, formData.remember);
 
-      console.log('Usuario autenticado con éxito:', userData);
+      console.log('✅ Usuario autenticado con éxito:', userData);
+      console.log('🎯 Rol normalizado:', userData.role);
 
-      // 4. Redirigir según el rol después de un breve delay
-      setTimeout(() => {
-        if (userData.role === 'docente') {
-          navigate('/dashboard-docente');
-        } else if (userData.role === 'padre') {
-          navigate('/dashboard-padre');
-        } else if (userData.role === 'admin') {
-          navigate('/dashboard-administrador');
-        } else {
-          navigate('/dashboard');
-        }
-      }, 1000);
+      // 4. Redirigir a /dashboard y dejar que DashboardRedirect maneje la redirección
+      // ¡NO más redirección manual aquí!
+      navigate('/dashboard');
 
     } catch (error) {
       console.error('Error al iniciar sesión:', error);

@@ -332,7 +332,7 @@ function DashboardDocente() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo">
-            <span className="logo-text">EduCitas</span>
+            <span className="logo-text">QuickReserve</span>
           </div>
           <div className="user-info">
             <div className="user-avatar">{docenteData.name.split(' ').map(n => n[0]).join('')}</div>
