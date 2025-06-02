@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../css/DashboardPadre.css';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -64,9 +64,74 @@ function DashboardPadre() {
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'
   ];
 
-  // 🔥 FUNCIONES FIRESTORE PARA DOCENTES
+  // 🔍 FUNCIÓN DE ÚLTIMO RECURSO: CARGAR TODOS Y FILTRAR DOCENTES
+  const cargarTodosLosUsuarios = useCallback(async () => {
+    try {
+      console.log('🔍 Cargando todos los usuarios para filtrar docentes...');
+      
+      const usuariosRef = collection(db, 'usuarios');
+      const usuariosSnap = await getDocs(usuariosRef);
+      
+      console.log(`📊 Total documentos en colección: ${usuariosSnap.size}`);
+      
+      const todosUsuarios = [];
+      usuariosSnap.forEach((doc) => {
+        const userData = { id: doc.id, ...doc.data() };
+        todosUsuarios.push(userData);
+        console.log('📋 Usuario:', userData);
+      });
+      
+      // Filtrar docentes manualmente
+      const docentes = todosUsuarios.filter(usuario => 
+        usuario.role === 'docente' || usuario.rol === 'docente'
+      );
+      
+      console.log('👨‍🏫 Docentes filtrados manualmente:', docentes);
+      
+      if (docentes.length > 0) {
+        setDocentesDisponibles(docentes);
+        console.log('✅ Docentes cargados mediante filtro manual:', docentes.length);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al cargar todos los usuarios:', error);
+    }
+  }, []);
 
-  const cargarDocentesDisponibles = async () => {
+  // 🔄 FUNCIÓN ALTERNATIVA PARA BUSCAR DOCENTES CON 'rol'
+  const buscarDocentesConRolAlternativo = useCallback(async () => {
+    try {
+      console.log('🔍 Intentando búsqueda alternativa con campo "rol"...');
+      
+      const usuariosRef = collection(db, 'usuarios');
+      const q = query(usuariosRef, where('rol', '==', 'docente'));
+      
+      const usuariosSnap = await getDocs(q);
+      const docentes = [];
+      
+      console.log(`📊 Docentes encontrados con 'rol': ${usuariosSnap.size}`);
+      
+      usuariosSnap.forEach((doc) => {
+        const userData = { id: doc.id, ...doc.data() };
+        console.log('👨‍🏫 Docente encontrado (rol):', userData);
+        docentes.push(userData);
+      });
+      
+      if (docentes.length > 0) {
+        setDocentesDisponibles(docentes);
+        console.log('✅ Docentes encontrados con campo "rol":', docentes.length);
+      } else {
+        // Si tampoco encuentra con 'rol', intentar cargar todos y filtrar
+        await cargarTodosLosUsuarios();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en búsqueda alternativa de docentes:', error);
+    }
+  }, [cargarTodosLosUsuarios]);
+
+  // 🔥 FUNCIONES FIRESTORE PARA DOCENTES - ENVUELTAS EN useCallback
+  const cargarDocentesDisponibles = useCallback(async () => {
     try {
       setLoadingDocentes(true);
       console.log('🔍 Buscando docentes en colección "usuarios"...');
@@ -100,73 +165,7 @@ function DashboardPadre() {
     } finally {
       setLoadingDocentes(false);
     }
-  };
-
-  // 🔄 FUNCIÓN ALTERNATIVA PARA BUSCAR DOCENTES CON 'rol'
-  const buscarDocentesConRolAlternativo = async () => {
-    try {
-      console.log('🔍 Intentando búsqueda alternativa con campo "rol"...');
-      
-      const usuariosRef = collection(db, 'usuarios');
-      const q = query(usuariosRef, where('rol', '==', 'docente'));
-      
-      const usuariosSnap = await getDocs(q);
-      const docentes = [];
-      
-      console.log(`📊 Docentes encontrados con 'rol': ${usuariosSnap.size}`);
-      
-      usuariosSnap.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
-        console.log('👨‍🏫 Docente encontrado (rol):', userData);
-        docentes.push(userData);
-      });
-      
-      if (docentes.length > 0) {
-        setDocentesDisponibles(docentes);
-        console.log('✅ Docentes encontrados con campo "rol":', docentes.length);
-      } else {
-        // Si tampoco encuentra con 'rol', intentar cargar todos y filtrar
-        await cargarTodosLosUsuarios();
-      }
-      
-    } catch (error) {
-      console.error('❌ Error en búsqueda alternativa de docentes:', error);
-    }
-  };
-
-  // 🔍 FUNCIÓN DE ÚLTIMO RECURSO: CARGAR TODOS Y FILTRAR DOCENTES
-  const cargarTodosLosUsuarios = async () => {
-    try {
-      console.log('🔍 Cargando todos los usuarios para filtrar docentes...');
-      
-      const usuariosRef = collection(db, 'usuarios');
-      const usuariosSnap = await getDocs(usuariosRef);
-      
-      console.log(`📊 Total documentos en colección: ${usuariosSnap.size}`);
-      
-      const todosUsuarios = [];
-      usuariosSnap.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
-        todosUsuarios.push(userData);
-        console.log('📋 Usuario:', userData);
-      });
-      
-      // Filtrar docentes manualmente
-      const docentes = todosUsuarios.filter(usuario => 
-        usuario.role === 'docente' || usuario.rol === 'docente'
-      );
-      
-      console.log('👨‍🏫 Docentes filtrados manualmente:', docentes);
-      
-      if (docentes.length > 0) {
-        setDocentesDisponibles(docentes);
-        console.log('✅ Docentes cargados mediante filtro manual:', docentes.length);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error al cargar todos los usuarios:', error);
-    }
-  };
+  }, [buscarDocentesConRolAlternativo]); // Incluir la dependencia
 
   // 🔥 FUNCIONES FIRESTORE PARA HORARIOS DEL DOCENTE
 
@@ -284,9 +283,10 @@ function DashboardPadre() {
     return docentesDisponibles.find(docente => docente.id === docenteId);
   };
 
-  // 🔥 FUNCIONES FIRESTORE PARA CITAS
-
-  const cargarCitasDelPadre = async () => {
+  // 🔥 FUNCIONES FIRESTORE PARA CITAS - ENVUELTAS EN useCallback
+  const cargarCitasDelPadre = useCallback(async () => {
+    if (!user?.uid) return;
+    
     try {
       setLoading(true);
       const citasRef = collection(db, 'citas');
@@ -343,7 +343,7 @@ function DashboardPadre() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]); // Depende solo de user.uid
 
   const guardarCitaEnFirestore = async (citaData) => {
     try {
@@ -420,21 +420,21 @@ function DashboardPadre() {
     }
   };
 
-  // 🔥 EFECTOS
+  // 🔥 EFECTOS - CORREGIDOS CON DEPENDENCIAS APROPIADAS
   useEffect(() => {
     if (user?.uid) {
       setSemanaActual(obtenerSemanaActual());
       cargarDocentesDisponibles();
       cargarCitasDelPadre();
     }
-  }, [user?.uid]);
+  }, [user?.uid, cargarDocentesDisponibles, cargarCitasDelPadre]);
 
   // 🔄 EFECTO PARA RECARGAR CITAS CUANDO SE CAMBIE A ESA SECCIÓN
   useEffect(() => {
     if (activeSection === 'citas' && user?.uid) {
       cargarCitasDelPadre();
     }
-  }, [activeSection, user?.uid]);
+  }, [activeSection, user?.uid, cargarCitasDelPadre]);
 
   // 🔥 CRUD PARA CITAS
   const handleCreateCita = async (e) => {
@@ -1161,5 +1161,3 @@ function DashboardPadre() {
 }
 
 export default DashboardPadre;
-
-//Este funciona
